@@ -1,0 +1,959 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>CSOJ（智码）- AI辅助教学在线判题平台 技术文档 | pyrrhus的技术小屋</title><meta name="author" content="pyrrhus"><meta name="copyright" content="pyrrhus"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="AI辅助教学OJ平台完整技术文档，涵盖微服务架构、Docker沙箱判题、高可用部署">
+<meta property="og:type" content="article">
+<meta property="og:title" content="CSOJ（智码）- AI辅助教学在线判题平台 技术文档">
+<meta property="og:url" content="https://youlazi.github.io/2026/03/30/2026-03-30-oj-platform-tech-doc/index.html">
+<meta property="og:site_name" content="pyrrhus的技术小屋">
+<meta property="og:description" content="AI辅助教学OJ平台完整技术文档，涵盖微服务架构、Docker沙箱判题、高可用部署">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://youlazi.github.io/img/avatar.png">
+<meta property="article:published_time" content="2026-03-30T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-30T10:00:37.230Z">
+<meta property="article:author" content="pyrrhus">
+<meta property="article:tag" content="Docker">
+<meta property="article:tag" content="Java">
+<meta property="article:tag" content="OJ系统">
+<meta property="article:tag" content="Spring Boot">
+<meta property="article:tag" content="毕业设计">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://youlazi.github.io/img/avatar.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "CSOJ（智码）- AI辅助教学在线判题平台 技术文档",
+  "url": "https://youlazi.github.io/2026/03/30/2026-03-30-oj-platform-tech-doc/",
+  "image": "https://youlazi.github.io/img/avatar.png",
+  "datePublished": "2026-03-30T10:00:00.000Z",
+  "dateModified": "2026-03-30T10:00:37.230Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "pyrrhus",
+      "url": "https://youlazi.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://youlazi.github.io/2026/03/30/2026-03-30-oj-platform-tech-doc/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
+
+          if (theme === undefined) {
+            if (mediaQueryLight.matches) activateLightMode()
+            else if (mediaQueryDark.matches) activateDarkMode()
+            else {
+              const hour = new Date().getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            mediaQueryDark.addEventListener('change', () => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else {
+            theme === 'light' ? activateLightMode() : activateDarkMode()
+          }
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'CSOJ（智码）- AI辅助教学在线判题平台 技术文档',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/url('https:/cdn.jsdelivr.net/gh/Ukenn2112/ukennweb@img/api/62775967_p0.jpg'));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://picsum.photos/1920/600?random=2);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">pyrrhus的技术小屋</span></a><a class="nav-page-title" href="/"><span class="site-name">CSOJ（智码）- AI辅助教学在线判题平台 技术文档</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">CSOJ（智码）- AI辅助教学在线判题平台 技术文档</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-30T10:00:37.230Z" title="更新于 2026-03-30 18:00:37">2026-03-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%A1%B9%E7%9B%AE%E6%96%87%E6%A1%A3/">项目文档</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>5分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="CSOJ（智码）-AI辅助教学在线判题平台-技术文档"><a href="#CSOJ（智码）-AI辅助教学在线判题平台-技术文档" class="headerlink" title="CSOJ（智码）- AI辅助教学在线判题平台 技术文档"></a>CSOJ（智码）- AI辅助教学在线判题平台 技术文档</h1><h2 id="1-项目概述"><a href="#1-项目概述" class="headerlink" title="1. 项目概述"></a>1. 项目概述</h2><h3 id="项目背景"><a href="#项目背景" class="headerlink" title="项目背景"></a>项目背景</h3><p>随着高校编程教学规模的扩大，传统编程教学方式面临批改效率低、反馈不及时、缺乏个性化指导等问题。本项目旨在构建一个支持多语言、高可用的智能在线判题平台，为编程教学提供自动化的代码评测和AI辅助教学能力。</p>
+<h3 id="项目目标"><a href="#项目目标" class="headerlink" title="项目目标"></a>项目目标</h3><ul>
+<li>构建支持 <strong>9种编程语言</strong> 的在线判题系统</li>
+<li>实现 <strong>Docker沙箱隔离</strong> 的安全判题机制</li>
+<li>提供高可用的微服务架构，保障系统稳定运行</li>
+<li>通过CI&#x2F;CD实现自动化部署，降低运维成本</li>
+</ul>
+<h3 id="项目成果"><a href="#项目成果" class="headerlink" title="项目成果"></a>项目成果</h3><ul>
+<li><strong>优秀毕业设计 Top 5&#x2F;2000+</strong>（全校2000+毕业生中排名前5）</li>
+<li>累计服务 <strong>500+学生</strong>，日均判题 <strong>1000+次</strong></li>
+<li>编写 <strong>119个单元测试</strong>，保证代码质量</li>
+<li>三模块完整工程：前端、后端、代码沙箱独立部署</li>
+</ul>
+<hr>
+<h2 id="2-系统架构"><a href="#2-系统架构" class="headerlink" title="2. 系统架构"></a>2. 系统架构</h2><h3 id="整体架构"><a href="#整体架构" class="headerlink" title="整体架构"></a>整体架构</h3><p>系统采用 <strong>Spring Cloud微服务架构</strong>，分为三个核心模块：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────┐    ┌──────────────────────────────────────┐</span><br><span class="line">│  Vue 3 前端  │───▶│          Nginx 反向代理              │</span><br><span class="line">└─────────────┘    └──────────┬───────────────────────────┘</span><br><span class="line">                              │</span><br><span class="line">          ┌───────────────────┼───────────────────┐</span><br><span class="line">          ▼                   ▼                   ▼</span><br><span class="line">┌─────────────────┐ ┌──────────────┐ ┌─────────────────────┐</span><br><span class="line">│  Gateway 网关    │ │  用户服务     │ │   题目服务          │</span><br><span class="line">│  (路由/鉴权)     │ │  (认证/管理)  │ │   (CRUD/分类)       │</span><br><span class="line">└────────┬────────┘ └──────┬───────┘ └──────────┬──────────┘</span><br><span class="line">         │                 │                    │</span><br><span class="line">         ▼                 ▼                    ▼</span><br><span class="line">┌─────────────────────────────────────────────────────┐</span><br><span class="line">│                  消息队列 (RabbitMQ)                  │</span><br><span class="line">└──────────────────────┬──────────────────────────────┘</span><br><span class="line">                       ▼</span><br><span class="line">         ┌─────────────────────────┐</span><br><span class="line">         │   代码沙箱服务           │</span><br><span class="line">         │  (Docker 隔离判题)       │</span><br><span class="line">         └─────────────────────────┘</span><br><span class="line">                       │</span><br><span class="line">         ┌─────────────┼─────────────┐</span><br><span class="line">         ▼             ▼             ▼</span><br><span class="line">   ┌──────────┐ ┌──────────┐ ┌──────────┐</span><br><span class="line">   │ MySQL主  │ │ MySQL从  │ │  Redis   │</span><br><span class="line">   │  (写)    │ │  (读)    │ │ Sentinel │</span><br><span class="line">   └──────────┘ └──────────┘ └──────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="架构设计亮点"><a href="#架构设计亮点" class="headerlink" title="架构设计亮点"></a>架构设计亮点</h3><ul>
+<li><strong>微服务拆分</strong>：用户、题目、判题、提交等服务独立部署，可独立扩展</li>
+<li><strong>消息队列解耦</strong>：判题请求通过 RabbitMQ 异步处理，削峰填谷</li>
+<li><strong>读写分离</strong>：MySQL主从复制，读请求分流到从库，降低主库压力</li>
+<li><strong>沙箱隔离</strong>：每个判题任务在独立Docker容器中执行，防止恶意代码</li>
+</ul>
+<hr>
+<h2 id="3-技术栈详解"><a href="#3-技术栈详解" class="headerlink" title="3. 技术栈详解"></a>3. 技术栈详解</h2><table>
+<thead>
+<tr>
+<th>技术</th>
+<th>版本</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Java</td>
+<td>17</td>
+<td>后端开发语言，LTS版本</td>
+</tr>
+<tr>
+<td>Spring Boot</td>
+<td>3.x</td>
+<td>微服务快速开发框架</td>
+</tr>
+<tr>
+<td>Spring Cloud</td>
+<td>2022.x</td>
+<td>微服务治理（注册发现、配置中心、网关）</td>
+</tr>
+<tr>
+<td>MySQL</td>
+<td>8.0</td>
+<td>主从复制，读写分离</td>
+</tr>
+<tr>
+<td>Redis</td>
+<td>7.x</td>
+<td>Sentinel高可用，缓存&#x2F;分布式锁</td>
+</tr>
+<tr>
+<td>RabbitMQ</td>
+<td>3.x</td>
+<td>异步判题消息队列</td>
+</tr>
+<tr>
+<td>Docker</td>
+<td>24.x</td>
+<td>代码沙箱隔离执行环境</td>
+</tr>
+<tr>
+<td>Vue 3</td>
+<td>3.x</td>
+<td>前端框架，Composition API</td>
+</tr>
+<tr>
+<td>Nginx</td>
+<td>1.24</td>
+<td>反向代理、负载均衡、静态资源</td>
+</tr>
+<tr>
+<td>Jenkins&#x2F;GitLab CI</td>
+<td>-</td>
+<td>CI&#x2F;CD 自动化构建部署</td>
+</tr>
+<tr>
+<td>JUnit 5</td>
+<td>5.x</td>
+<td>单元测试框架</td>
+</tr>
+</tbody></table>
+<h3 id="支持的编程语言"><a href="#支持的编程语言" class="headerlink" title="支持的编程语言"></a>支持的编程语言</h3><p>C, C++, Java, Python, Go, JavaScript, TypeScript, C#, Rust（共9种）</p>
+<hr>
+<h2 id="4-核心功能模块"><a href="#4-核心功能模块" class="headerlink" title="4. 核心功能模块"></a>4. 核心功能模块</h2><h3 id="4-1-用户模块"><a href="#4-1-用户模块" class="headerlink" title="4.1 用户模块"></a>4.1 用户模块</h3><ul>
+<li>注册&#x2F;登录（JWT鉴权）</li>
+<li>角色管理（学生&#x2F;教师&#x2F;管理员）</li>
+<li>个人信息管理、提交记录查看</li>
+</ul>
+<h3 id="4-2-题目模块"><a href="#4-2-题目模块" class="headerlink" title="4.2 题目模块"></a>4.2 题目模块</h3><ul>
+<li>题目CRUD（题干、题解、标签、分类）</li>
+<li>难度分级（简单&#x2F;中等&#x2F;困难）</li>
+<li>题目搜索与筛选</li>
+<li>测试用例管理</li>
+</ul>
+<h3 id="4-3-判题模块"><a href="#4-3-判题模块" class="headerlink" title="4.3 判题模块"></a>4.3 判题模块</h3><ul>
+<li><strong>异步判题流程</strong>：用户提交 → RabbitMQ → 沙箱拉取镜像 → 编译运行 → 对比输出 → 返回结果</li>
+<li>判题结果：AC&#x2F;WA&#x2F;TLE&#x2F;MLE&#x2F;CE&#x2F;RE</li>
+<li>支持自定义时间&#x2F;内存限制</li>
+<li>特殊判题（SPJ）</li>
+</ul>
+<h3 id="4-4-代码沙箱模块（独立服务）"><a href="#4-4-代码沙箱模块（独立服务）" class="headerlink" title="4.4 代码沙箱模块（独立服务）"></a>4.4 代码沙箱模块（独立服务）</h3><ul>
+<li>Docker容器生命周期管理</li>
+<li>资源限制（CPU、内存、网络隔离）</li>
+<li>安全策略（禁止系统调用、文件访问限制）</li>
+<li>超时自动销毁</li>
+</ul>
+<h3 id="4-5-比赛模块"><a href="#4-5-比赛模块" class="headerlink" title="4.5 比赛模块"></a>4.5 比赛模块</h3><ul>
+<li>ACM&#x2F;IOI赛制支持</li>
+<li>实时排行榜</li>
+<li>比赛数据统计</li>
+</ul>
+<hr>
+<h2 id="5-关键技术实现"><a href="#5-关键技术实现" class="headerlink" title="5. 关键技术实现"></a>5. 关键技术实现</h2><h3 id="5-1-Docker沙箱判题引擎"><a href="#5-1-Docker沙箱判题引擎" class="headerlink" title="5.1 Docker沙箱判题引擎"></a>5.1 Docker沙箱判题引擎</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">判题流程：</span><br><span class="line">1. 接收判题请求（代码、语言、测试用例）</span><br><span class="line">2. 创建Docker容器，设置资源限制</span><br><span class="line">3. 挂载代码文件，执行编译/运行命令</span><br><span class="line">4. 捕获stdout，与期望输出对比</span><br><span class="line">5. 返回判题结果，销毁容器</span><br></pre></td></tr></table></figure>
+
+<p>核心安全措施：</p>
+<ul>
+<li>使用 <code>--network=none</code> 禁止网络访问</li>
+<li><code>--memory</code> 和 <code>--cpus</code> 限制资源使用</li>
+<li><code>--read-only</code> 只读文件系统</li>
+<li><code>--security-opt=no-new-privileges</code> 防止提权</li>
+<li>使用非root用户执行代码</li>
+</ul>
+<h3 id="5-2-MySQL主从读写分离"><a href="#5-2-MySQL主从读写分离" class="headerlink" title="5.2 MySQL主从读写分离"></a>5.2 MySQL主从读写分离</h3><ul>
+<li><strong>主库</strong>：处理写操作（INSERT&#x2F;UPDATE&#x2F;DELETE）</li>
+<li><strong>从库</strong>：处理读操作（SELECT）</li>
+<li>通过Spring AOP + 自定义注解 <code>@ReadOnly</code> 实现自动路由</li>
+<li>使用Binlog实现数据同步</li>
+</ul>
+<h3 id="5-3-Redis-Sentinel高可用"><a href="#5-3-Redis-Sentinel高可用" class="headerlink" title="5.3 Redis Sentinel高可用"></a>5.3 Redis Sentinel高可用</h3><ul>
+<li>Sentinel集群监控Redis主从状态</li>
+<li>主节点故障时自动故障转移</li>
+<li>用于：会话管理、题目缓存、排行榜实时计算、分布式锁（防止重复提交）</li>
+</ul>
+<h3 id="5-4-RabbitMQ异步判题"><a href="#5-4-RabbitMQ异步判题" class="headerlink" title="5.4 RabbitMQ异步判题"></a>5.4 RabbitMQ异步判题</h3><ul>
+<li>死信队列处理超时任务</li>
+<li>消息持久化防止丢失</li>
+<li>手动ACK确认机制</li>
+<li>根据语言类型路由到不同队列</li>
+</ul>
+<hr>
+<h2 id="6-数据库设计"><a href="#6-数据库设计" class="headerlink" title="6. 数据库设计"></a>6. 数据库设计</h2><h3 id="核心表结构"><a href="#核心表结构" class="headerlink" title="核心表结构"></a>核心表结构</h3><p><strong>用户表 (user)</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>username</td>
+<td>VARCHAR(50)</td>
+<td>用户名</td>
+</tr>
+<tr>
+<td>password</td>
+<td>VARCHAR(255)</td>
+<td>密码(BCrypt)</td>
+</tr>
+<tr>
+<td>role</td>
+<td>TINYINT</td>
+<td>角色(0学生&#x2F;1教师&#x2F;2管理员)</td>
+</tr>
+<tr>
+<td>avatar</td>
+<td>VARCHAR(255)</td>
+<td>头像URL</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>创建时间</td>
+</tr>
+</tbody></table>
+<p><strong>题目表 (problem)</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>title</td>
+<td>VARCHAR(200)</td>
+<td>题目标题</td>
+</tr>
+<tr>
+<td>description</td>
+<td>TEXT</td>
+<td>题目描述</td>
+</tr>
+<tr>
+<td>difficulty</td>
+<td>TINYINT</td>
+<td>难度</td>
+</tr>
+<tr>
+<td>time_limit</td>
+<td>INT</td>
+<td>时间限制(ms)</td>
+</tr>
+<tr>
+<td>memory_limit</td>
+<td>INT</td>
+<td>内存限制(KB)</td>
+</tr>
+<tr>
+<td>tags</td>
+<td>VARCHAR(500)</td>
+<td>标签(JSON)</td>
+</tr>
+</tbody></table>
+<p><strong>提交表 (submission)</strong></p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>id</td>
+<td>BIGINT</td>
+<td>主键</td>
+</tr>
+<tr>
+<td>user_id</td>
+<td>BIGINT</td>
+<td>用户ID</td>
+</tr>
+<tr>
+<td>problem_id</td>
+<td>BIGINT</td>
+<td>题目ID</td>
+</tr>
+<tr>
+<td>language</td>
+<td>VARCHAR(20)</td>
+<td>编程语言</td>
+</tr>
+<tr>
+<td>code</td>
+<td>TEXT</td>
+<td>代码内容</td>
+</tr>
+<tr>
+<td>status</td>
+<td>TINYINT</td>
+<td>判题结果</td>
+</tr>
+<tr>
+<td>time_used</td>
+<td>INT</td>
+<td>用时(ms)</td>
+</tr>
+<tr>
+<td>memory_used</td>
+<td>INT</td>
+<td>用内存(KB)</td>
+</tr>
+<tr>
+<td>created_at</td>
+<td>DATETIME</td>
+<td>提交时间</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="7-部署方案"><a href="#7-部署方案" class="headerlink" title="7. 部署方案"></a>7. 部署方案</h2><h3 id="部署架构"><a href="#部署架构" class="headerlink" title="部署架构"></a>部署架构</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">┌──────────┐</span><br><span class="line">│  Nginx   │ ← SSL终止、负载均衡</span><br><span class="line">└────┬─────┘</span><br><span class="line">     ├─→ 前端静态资源 (Vue 3 Build)</span><br><span class="line">     ├─→ Gateway服务 (:8080)</span><br><span class="line">     │     ├─→ 用户服务 (:8081)</span><br><span class="line">     │     ├─→ 题目服务 (:8082)</span><br><span class="line">     │     ├─→ 判题服务 (:8083)</span><br><span class="line">     │     └─→ 比赛服务 (:8084)</span><br><span class="line">     ├─→ RabbitMQ (:5672)</span><br><span class="line">     ├─→ MySQL 主 (:3306) + 从 (:3307)</span><br><span class="line">     └─→ Redis Sentinel (:26379)</span><br></pre></td></tr></table></figure>
+
+<h3 id="CI-CD流水线"><a href="#CI-CD流水线" class="headerlink" title="CI&#x2F;CD流水线"></a>CI&#x2F;CD流水线</h3><ol>
+<li><strong>代码推送</strong> → 触发Webhook</li>
+<li><strong>构建阶段</strong>：Maven编译打包</li>
+<li><strong>测试阶段</strong>：运行119个单元测试</li>
+<li><strong>镜像构建</strong>：Docker Build各服务镜像</li>
+<li><strong>部署阶段</strong>：Docker Compose一键部署&#x2F;滚动更新</li>
+</ol>
+<hr>
+<h2 id="8-性能优化"><a href="#8-性能优化" class="headerlink" title="8. 性能优化"></a>8. 性能优化</h2><h3 id="性能指标"><a href="#性能指标" class="headerlink" title="性能指标"></a>性能指标</h3><ul>
+<li><strong>日均判题量</strong>：1000+次</li>
+<li><strong>并发判题</strong>：支持多容器并行判题</li>
+<li><strong>服务用户</strong>：500+学生</li>
+</ul>
+<h3 id="优化措施"><a href="#优化措施" class="headerlink" title="优化措施"></a>优化措施</h3><table>
+<thead>
+<tr>
+<th>优化项</th>
+<th>方案</th>
+<th>效果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>读写分离</td>
+<td>MySQL主从 + AOP路由</td>
+<td>读性能提升50%+</td>
+</tr>
+<tr>
+<td>缓存</td>
+<td>Redis缓存热点题目&#x2F;排行榜</td>
+<td>DB查询减少60%+</td>
+</tr>
+<tr>
+<td>异步判题</td>
+<td>RabbitMQ削峰</td>
+<td>高峰期不阻塞</td>
+</tr>
+<tr>
+<td>静态资源</td>
+<td>Nginx + Gzip</td>
+<td>前端加载&lt;1s</td>
+</tr>
+<tr>
+<td>连接池</td>
+<td>HikariCP</td>
+<td>减少连接开销</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="9-项目成果"><a href="#9-项目成果" class="headerlink" title="9. 项目成果"></a>9. 项目成果</h2><ul>
+<li>🏆 <strong>优秀毕业设计 Top 5&#x2F;2000+</strong></li>
+<li>👥 累计服务 <strong>500+学生</strong></li>
+<li>📊 日均判题 <strong>1000+次</strong></li>
+<li>🧪 <strong>119个单元测试</strong>，代码覆盖率高</li>
+<li>🌐 支持 <strong>9种编程语言</strong></li>
+<li>🏗️ 完整的微服务架构 + CI&#x2F;CD流水线</li>
+<li>📦 三模块独立可部署：<code>csoj-backend-master</code>、<code>csoj-code-sandbox-master</code>、<code>csoj-frontend-master</code></li>
+</ul>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://youlazi.github.io">pyrrhus</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://youlazi.github.io/2026/03/30/2026-03-30-oj-platform-tech-doc/">https://youlazi.github.io/2026/03/30/2026-03-30-oj-platform-tech-doc/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://youlazi.github.io" target="_blank">pyrrhus的技术小屋</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Docker/">Docker</a><a class="post-meta__tags" href="/tags/Java/">Java</a><a class="post-meta__tags" href="/tags/Spring-Boot/">Spring Boot</a><a class="post-meta__tags" href="/tags/OJ%E7%B3%BB%E7%BB%9F/">OJ系统</a><a class="post-meta__tags" href="/tags/%E6%AF%95%E4%B8%9A%E8%AE%BE%E8%AE%A1/">毕业设计</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/30/2026-03-30-smart-teaching-platform-tech-doc/" title="智慧教学管理平台 技术文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">智慧教学管理平台 技术文档</div></div><div class="info-2"><div class="info-item-1">智慧教学管理平台 技术文档1. 项目概述项目背景传统教学管理面临课堂互动不足、实验环境搭建复杂、排课效率低等问题。本项目整合在线课堂、智能排课、在线IDE等功能，构建一站式智慧教学管理平台。 项目目标 实现低延迟视频课堂（&lt;200ms） 提供在线编程实验环境 开发智能排课算法 构建三端协同的教学管理体系  项目成果 🏆 省级大创项目 🏆 中国计算机设计大赛国家级三等奖 视频延迟 &lt;200ms，支持 100+并发 QPS经压测优化从 200提升至800+ 三端完整交付：前端 + 后端 + 排课算法   2. 系统架构整体架构123456789101112131415161718192021┌──────────────┐  ┌──────────────┐  ┌──────────────┐│  管理端(Vue)  │  │ 教师端(Vue)  │  │  学生端(Vue)  │└──────┬───────┘  └──────┬───────┘  └──────┬───────┘       │                 │                 ...</div></div></div></a><a class="pagination-related" href="/2026/03/30/2026-03-30-rag-knowledge-base-tech-doc/" title="IdeaFlow - 企业级RAG知识库问答系统 技术文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">IdeaFlow - 企业级RAG知识库问答系统 技术文档</div></div><div class="info-2"><div class="info-item-1">IdeaFlow - 企业级RAG知识库问答系统 技术文档1. 项目概述项目背景企业在日常运营中积累了大量文档（PDF、Word、Markdown等），但传统搜索方式难以从海量非结构化数据中精准获取答案。本项目基于RAG（Retrieval-Augmented Generation）技术，构建企业级知识库问答系统，实现”上传文档→智能问答”的全链路能力。 项目目标 实现RAG全链路：文档解析→向量化→检索→生成 基于Quivr开源框架二次开发，打造企业级知识库 支持多模型热切换，降低厂商锁定风险 达到P95响应&lt;2s的生产级性能  项目成果 担任 Tech Lead，主导RAG核心模块开发 Top-K召回准确率 85%+ P95响应 &lt;2s 支持 10+文档格式 支持 OpenAI &#x2F; Claude &#x2F; 本地模型热切换   2. 系统架构整体架构12345678910111213141516171819202122232425┌─────────────────────────────────────────────────┐│          ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/03/30/2026-03-30-backend-architecture-quickstart/" title="后端架构快速入门"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-30</div><div class="info-item-2">后端架构快速入门</div></div><div class="info-2"><div class="info-item-1">后端架构快速入门 Java 全栈核心知识速查，覆盖 Spring 生态、中间件、数据库与多语言基础。   一、Java 17 核心新特性Stream API1234567891011121314List&lt;String&gt; names = List.of(&quot;张三&quot;, &quot;李四&quot;, &quot;王五&quot;);// filter + map + collectList&lt;String&gt; result = names.stream()    .filter(n -&gt; n.startsWith(&quot;张&quot;))    .map(String::toUpperCase)    .collect(Collectors.toList());// 分组Map&lt;Integer, List&lt;String&gt;&gt; byLength = names.stream()    .collect(Collectors.groupingBy(String::length));// 归约int sum = Int...</div></div></div></a><a class="pagination-related" href="/2026/03/30/2026-03-30-frontend-devops-quickstart/" title="前端与工程化快速入门"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-30</div><div class="info-item-2">前端与工程化快速入门</div></div><div class="info-2"><div class="info-item-1">前端与工程化快速入门 全栈开发者必备的前端与 DevOps 知识速查。   一、Vue 3Composition API123456789101112131415161718&lt;template&gt;  &lt;div&gt;    &lt;p&gt;&#123;&#123; count &#125;&#125;&lt;/p&gt;    &lt;button @click=&quot;increment&quot;&gt;+1&lt;/button&gt;    &lt;p&gt;&#123;&#123; doubled &#125;&#125;&lt;/p&gt;  &lt;/div&gt;&lt;/template&gt;&lt;script setup&gt;import &#123; ref, computed &#125; from &#x27;vue&#x27;const count = ref(0)            // 响应式基本类型const doubled = computed(() =&gt; count.value * 2)  // 计算属性...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">pyrrhus</div><div class="author-info-description">AI应用开发者 | 技术分享者</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/YouLaZi" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:3179738838@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a><a class="social-icon" href="tencent://AddContact/?fromId=50&amp;fromSubId=1&amp;subcmd=all&amp;uin=3179738838" target="_blank" title="QQ"><i class="fab fa-qq"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的技术小屋！这里记录着我的成长与探索。</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#CSOJ%EF%BC%88%E6%99%BA%E7%A0%81%EF%BC%89-AI%E8%BE%85%E5%8A%A9%E6%95%99%E5%AD%A6%E5%9C%A8%E7%BA%BF%E5%88%A4%E9%A2%98%E5%B9%B3%E5%8F%B0-%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3"><span class="toc-number">1.</span> <span class="toc-text">CSOJ（智码）- AI辅助教学在线判题平台 技术文档</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#1-%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0"><span class="toc-number">1.1.</span> <span class="toc-text">1. 项目概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E8%83%8C%E6%99%AF"><span class="toc-number">1.1.1.</span> <span class="toc-text">项目背景</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E7%9B%AE%E6%A0%87"><span class="toc-number">1.1.2.</span> <span class="toc-text">项目目标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E6%88%90%E6%9E%9C"><span class="toc-number">1.1.3.</span> <span class="toc-text">项目成果</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#2-%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.</span> <span class="toc-text">2. 系统架构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B4%E4%BD%93%E6%9E%B6%E6%9E%84"><span class="toc-number">1.2.1.</span> <span class="toc-text">整体架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%9E%B6%E6%9E%84%E8%AE%BE%E8%AE%A1%E4%BA%AE%E7%82%B9"><span class="toc-number">1.2.2.</span> <span class="toc-text">架构设计亮点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#3-%E6%8A%80%E6%9C%AF%E6%A0%88%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.3.</span> <span class="toc-text">3. 技术栈详解</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%94%AF%E6%8C%81%E7%9A%84%E7%BC%96%E7%A8%8B%E8%AF%AD%E8%A8%80"><span class="toc-number">1.3.1.</span> <span class="toc-text">支持的编程语言</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#4-%E6%A0%B8%E5%BF%83%E5%8A%9F%E8%83%BD%E6%A8%A1%E5%9D%97"><span class="toc-number">1.4.</span> <span class="toc-text">4. 核心功能模块</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E7%94%A8%E6%88%B7%E6%A8%A1%E5%9D%97"><span class="toc-number">1.4.1.</span> <span class="toc-text">4.1 用户模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E9%A2%98%E7%9B%AE%E6%A8%A1%E5%9D%97"><span class="toc-number">1.4.2.</span> <span class="toc-text">4.2 题目模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E5%88%A4%E9%A2%98%E6%A8%A1%E5%9D%97"><span class="toc-number">1.4.3.</span> <span class="toc-text">4.3 判题模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E4%BB%A3%E7%A0%81%E6%B2%99%E7%AE%B1%E6%A8%A1%E5%9D%97%EF%BC%88%E7%8B%AC%E7%AB%8B%E6%9C%8D%E5%8A%A1%EF%BC%89"><span class="toc-number">1.4.4.</span> <span class="toc-text">4.4 代码沙箱模块（独立服务）</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-5-%E6%AF%94%E8%B5%9B%E6%A8%A1%E5%9D%97"><span class="toc-number">1.4.5.</span> <span class="toc-text">4.5 比赛模块</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#5-%E5%85%B3%E9%94%AE%E6%8A%80%E6%9C%AF%E5%AE%9E%E7%8E%B0"><span class="toc-number">1.5.</span> <span class="toc-text">5. 关键技术实现</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-Docker%E6%B2%99%E7%AE%B1%E5%88%A4%E9%A2%98%E5%BC%95%E6%93%8E"><span class="toc-number">1.5.1.</span> <span class="toc-text">5.1 Docker沙箱判题引擎</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-MySQL%E4%B8%BB%E4%BB%8E%E8%AF%BB%E5%86%99%E5%88%86%E7%A6%BB"><span class="toc-number">1.5.2.</span> <span class="toc-text">5.2 MySQL主从读写分离</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-Redis-Sentinel%E9%AB%98%E5%8F%AF%E7%94%A8"><span class="toc-number">1.5.3.</span> <span class="toc-text">5.3 Redis Sentinel高可用</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-RabbitMQ%E5%BC%82%E6%AD%A5%E5%88%A4%E9%A2%98"><span class="toc-number">1.5.4.</span> <span class="toc-text">5.4 RabbitMQ异步判题</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#6-%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.6.</span> <span class="toc-text">6. 数据库设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E8%A1%A8%E7%BB%93%E6%9E%84"><span class="toc-number">1.6.1.</span> <span class="toc-text">核心表结构</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#7-%E9%83%A8%E7%BD%B2%E6%96%B9%E6%A1%88"><span class="toc-number">1.7.</span> <span class="toc-text">7. 部署方案</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2%E6%9E%B6%E6%9E%84"><span class="toc-number">1.7.1.</span> <span class="toc-text">部署架构</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CI-CD%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="toc-number">1.7.2.</span> <span class="toc-text">CI&#x2F;CD流水线</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#8-%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96"><span class="toc-number">1.8.</span> <span class="toc-text">8. 性能优化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%80%A7%E8%83%BD%E6%8C%87%E6%A0%87"><span class="toc-number">1.8.1.</span> <span class="toc-text">性能指标</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%BC%98%E5%8C%96%E6%8E%AA%E6%96%BD"><span class="toc-number">1.8.2.</span> <span class="toc-text">优化措施</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#9-%E9%A1%B9%E7%9B%AE%E6%88%90%E6%9E%9C"><span class="toc-number">1.9.</span> <span class="toc-text">9. 项目成果</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-ai-dev-quickstart/" title="AI 应用开发快速入门">AI 应用开发快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-frontend-devops-quickstart/" title="前端与工程化快速入门">前端与工程化快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-backend-architecture-quickstart/" title="后端架构快速入门">后端架构快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-fire-detection-tech-doc/" title="工业级火灾智能监测系统 技术文档">工业级火灾智能监测系统 技术文档</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-cv-quickstart/" title="传统 AI-CV 快速入门">传统 AI-CV 快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By pyrrhus</span></div><div class="footer_custom_text"><p style="color: #fff;">pyrrhus的技术小屋©2026|主题 
+<a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></p>
+</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : ''
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'YouLaZi/youlazi.github.io',
+      'data-repo-id': '',
+      'data-category-id': '',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

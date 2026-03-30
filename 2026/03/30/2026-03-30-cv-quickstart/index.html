@@ -1,0 +1,766 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>传统 AI-CV 快速入门 | pyrrhus的技术小屋</title><meta name="author" content="pyrrhus"><meta name="copyright" content="pyrrhus"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="传统AI计算机视觉快速入门，YOLO&#x2F;PaddleOCR&#x2F;TensorRT实战">
+<meta property="og:type" content="article">
+<meta property="og:title" content="传统 AI-CV 快速入门">
+<meta property="og:url" content="https://youlazi.github.io/2026/03/30/2026-03-30-cv-quickstart/index.html">
+<meta property="og:site_name" content="pyrrhus的技术小屋">
+<meta property="og:description" content="传统AI计算机视觉快速入门，YOLO&#x2F;PaddleOCR&#x2F;TensorRT实战">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://youlazi.github.io/img/avatar.png">
+<meta property="article:published_time" content="2026-03-30T10:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-30T10:00:37.236Z">
+<meta property="article:author" content="pyrrhus">
+<meta property="article:tag" content="Faster-RCNN">
+<meta property="article:tag" content="PaddlePaddle">
+<meta property="article:tag" content="TensorRT">
+<meta property="article:tag" content="YOLO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://youlazi.github.io/img/avatar.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "传统 AI-CV 快速入门",
+  "url": "https://youlazi.github.io/2026/03/30/2026-03-30-cv-quickstart/",
+  "image": "https://youlazi.github.io/img/avatar.png",
+  "datePublished": "2026-03-30T10:00:00.000Z",
+  "dateModified": "2026-03-30T10:00:37.236Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "pyrrhus",
+      "url": "https://youlazi.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://youlazi.github.io/2026/03/30/2026-03-30-cv-quickstart/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
+
+          if (theme === undefined) {
+            if (mediaQueryLight.matches) activateLightMode()
+            else if (mediaQueryDark.matches) activateDarkMode()
+            else {
+              const hour = new Date().getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            mediaQueryDark.addEventListener('change', () => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else {
+            theme === 'light' ? activateLightMode() : activateDarkMode()
+          }
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '传统 AI-CV 快速入门',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/url('https:/cdn.jsdelivr.net/gh/Ukenn2112/ukennweb@img/api/62775967_p0.jpg'));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://picsum.photos/1920/600?random=2);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">pyrrhus的技术小屋</span></a><a class="nav-page-title" href="/"><span class="site-name">传统 AI-CV 快速入门</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">传统 AI-CV 快速入门</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-30T10:00:37.236Z" title="更新于 2026-03-30 18:00:37">2026-03-30</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E6%8A%80%E6%9C%AF%E6%95%99%E7%A8%8B/">技术教程</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>4分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h1 id="传统-AI-CV-快速入门"><a href="#传统-AI-CV-快速入门" class="headerlink" title="传统 AI-CV 快速入门"></a>传统 AI-CV 快速入门</h1><blockquote>
+<p>计算机视觉核心概念与实战，面向 Java 开发者的 CV 入门指南。</p>
+</blockquote>
+<hr>
+<h2 id="一、计算机视觉基础"><a href="#一、计算机视觉基础" class="headerlink" title="一、计算机视觉基础"></a>一、计算机视觉基础</h2><h3 id="核心任务"><a href="#核心任务" class="headerlink" title="核心任务"></a>核心任务</h3><table>
+<thead>
+<tr>
+<th>任务</th>
+<th>说明</th>
+<th>典型应用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>图像分类</strong></td>
+<td>这张图是什么？</td>
+<td>内容审核、垃圾邮件图片过滤</td>
+</tr>
+<tr>
+<td><strong>目标检测</strong></td>
+<td>图里有什么，在哪里？</td>
+<td>自动驾驶、安防监控</td>
+</tr>
+<tr>
+<td><strong>语义分割</strong></td>
+<td>每个像素属于什么？</td>
+<td>医学影像、自动驾驶</td>
+</tr>
+<tr>
+<td><strong>OCR</strong></td>
+<td>图里有文字吗？</td>
+<td>票据识别、文档数字化</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、YOLO-系列（You-Only-Look-Once）"><a href="#二、YOLO-系列（You-Only-Look-Once）" class="headerlink" title="二、YOLO 系列（You Only Look Once）"></a>二、YOLO 系列（You Only Look Once）</h2><h3 id="核心思想"><a href="#核心思想" class="headerlink" title="核心思想"></a>核心思想</h3><p><strong>单阶段检测器</strong>：一次前向传播同时预测所有目标的类别和位置。速度极快，适合实时场景。</p>
+<h3 id="YOLO-检测原理"><a href="#YOLO-检测原理" class="headerlink" title="YOLO 检测原理"></a>YOLO 检测原理</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入图片 → 骨干网络提取特征 → 特征图划分网格 →</span><br><span class="line">每个网格预测: [类别概率, 边界框(x,y,w,h), 置信度] → NMS 去重 → 输出结果</span><br></pre></td></tr></table></figure>
+
+<h3 id="YOLOv8-快速上手"><a href="#YOLOv8-快速上手" class="headerlink" title="YOLOv8 快速上手"></a>YOLOv8 快速上手</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install ultralytics</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> ultralytics <span class="keyword">import</span> YOLO</span><br><span class="line"></span><br><span class="line"><span class="comment"># 预测（使用预训练模型）</span></span><br><span class="line">model = YOLO(<span class="string">&quot;yolov8n.pt&quot;</span>)  <span class="comment"># nano 版，最快</span></span><br><span class="line">results = model(<span class="string">&quot;test.jpg&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 显示结果</span></span><br><span class="line">results[<span class="number">0</span>].show()</span><br><span class="line"></span><br><span class="line"><span class="comment"># 自定义训练</span></span><br><span class="line">model = YOLO(<span class="string">&quot;yolov8n.pt&quot;</span>)</span><br><span class="line">model.train(data=<span class="string">&quot;dataset.yaml&quot;</span>, epochs=<span class="number">100</span>, imgsz=<span class="number">640</span>, batch=<span class="number">16</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 导出部署</span></span><br><span class="line">model.export(<span class="built_in">format</span>=<span class="string">&quot;onnx&quot;</span>)  <span class="comment"># 或 tensorrt、openvino</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="数据标注工具"><a href="#数据标注工具" class="headerlink" title="数据标注工具"></a>数据标注工具</h3><p>推荐 <strong>Label Studio</strong>（免费开源）：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">pip install label-studio</span><br><span class="line">label-studio start</span><br></pre></td></tr></table></figure>
+<p>标注格式输出为 YOLO 格式：<code>类别编号 中心x 中心y 宽 高</code>（归一化坐标）</p>
+<h3 id="dataset-yaml-配置"><a href="#dataset-yaml-配置" class="headerlink" title="dataset.yaml 配置"></a>dataset.yaml 配置</h3><figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">path:</span> <span class="string">./dataset</span></span><br><span class="line"><span class="attr">train:</span> <span class="string">images/train</span></span><br><span class="line"><span class="attr">val:</span> <span class="string">images/val</span></span><br><span class="line"><span class="attr">names:</span></span><br><span class="line">  <span class="attr">0:</span> <span class="string">cat</span></span><br><span class="line">  <span class="attr">1:</span> <span class="string">dog</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、Faster-R-CNN（两阶段检测器）"><a href="#三、Faster-R-CNN（两阶段检测器）" class="headerlink" title="三、Faster R-CNN（两阶段检测器）"></a>三、Faster R-CNN（两阶段检测器）</h2><h3 id="与-YOLO-对比"><a href="#与-YOLO-对比" class="headerlink" title="与 YOLO 对比"></a>与 YOLO 对比</h3><table>
+<thead>
+<tr>
+<th>维度</th>
+<th>YOLO（单阶段）</th>
+<th>Faster R-CNN（两阶段）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>速度</td>
+<td>快（30-100 FPS）</td>
+<td>慢（5-15 FPS）</td>
+</tr>
+<tr>
+<td>精度</td>
+<td>中高</td>
+<td>高</td>
+</tr>
+<tr>
+<td>原理</td>
+<td>直接预测</td>
+<td>先提候选框再分类</td>
+</tr>
+<tr>
+<td>适合</td>
+<td>实时检测</td>
+<td>精度优先场景</td>
+</tr>
+</tbody></table>
+<h3 id="两阶段流程"><a href="#两阶段流程" class="headerlink" title="两阶段流程"></a>两阶段流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">第一阶段：RPN（区域候选网络）→ 生成候选框（Proposal）</span><br><span class="line">第二阶段：对每个候选框 → 分类 + 边界框回归</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、PaddlePaddle（百度飞桨）"><a href="#四、PaddlePaddle（百度飞桨）" class="headerlink" title="四、PaddlePaddle（百度飞桨）"></a>四、PaddlePaddle（百度飞桨）</h2><h3 id="PaddleOCR-快速上手"><a href="#PaddleOCR-快速上手" class="headerlink" title="PaddleOCR 快速上手"></a>PaddleOCR 快速上手</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install paddlepaddle paddleocr</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> paddleocr <span class="keyword">import</span> PaddleOCR</span><br><span class="line"></span><br><span class="line">ocr = PaddleOCR(use_angle_cls=<span class="literal">True</span>, lang=<span class="string">&quot;ch&quot;</span>)</span><br><span class="line">result = ocr.ocr(<span class="string">&quot;invoice.jpg&quot;</span>, cls=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> line <span class="keyword">in</span> result:</span><br><span class="line">    <span class="keyword">for</span> word_info <span class="keyword">in</span> line:</span><br><span class="line">        bbox, (text, confidence) = word_info[<span class="number">0</span>], word_info[<span class="number">1</span>]</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;<span class="subst">&#123;text&#125;</span> (置信度: <span class="subst">&#123;confidence:<span class="number">.2</span>f&#125;</span>)&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="PaddleDetection"><a href="#PaddleDetection" class="headerlink" title="PaddleDetection"></a>PaddleDetection</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install paddledet</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> paddledet.engine <span class="keyword">import</span> Trainer</span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用配置文件训练</span></span><br><span class="line">trainer = Trainer(<span class="string">&quot;./configs/yolov3/yolov3_darknet53_270e_coco.yml&quot;</span>)</span><br><span class="line">trainer.train()</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、TensorRT（模型加速推理）"><a href="#五、TensorRT（模型加速推理）" class="headerlink" title="五、TensorRT（模型加速推理）"></a>五、TensorRT（模型加速推理）</h2><h3 id="为什么需要-TensorRT"><a href="#为什么需要-TensorRT" class="headerlink" title="为什么需要 TensorRT"></a>为什么需要 TensorRT</h3><p>训练好的模型（PyTorch&#x2F;ONNX）推理速度慢，TensorRT 通过图优化、精度校准（FP16&#x2F;INT8）、内核自动调优大幅加速。</p>
+<h3 id="部署流程"><a href="#部署流程" class="headerlink" title="部署流程"></a>部署流程</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 1. PyTorch → ONNX</span></span><br><span class="line">python export.py --weights yolov8n.pt --include onnx</span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. ONNX → TensorRT Engine</span></span><br><span class="line">trtexec --onnx=yolov8n.onnx --saveEngine=yolov8n.engine --fp16</span><br><span class="line"></span><br><span class="line"><span class="comment"># 3. 推理</span></span><br></pre></td></tr></table></figure>
+
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> tensorrt <span class="keyword">as</span> trt</span><br><span class="line"><span class="keyword">import</span> numpy <span class="keyword">as</span> np</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载 Engine 推理（简化示例）</span></span><br><span class="line"><span class="comment"># 实际项目中推荐用 tensorrt-python 或 trt-python 包装</span></span><br><span class="line"><span class="comment"># 加速效果通常: FP32 → FP16 快 2x，INT8 快 4x</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、迁移学习实战"><a href="#六、迁移学习实战" class="headerlink" title="六、迁移学习实战"></a>六、迁移学习实战</h2><p>核心思路：用别人训练好的模型（预训练权重），只微调最后一层适配你的任务。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> ultralytics <span class="keyword">import</span> YOLO</span><br><span class="line"></span><br><span class="line"><span class="comment"># 加载预训练模型（已经在 COCO 数据集上训练好）</span></span><br><span class="line">model = YOLO(<span class="string">&quot;yolov8n.pt&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 微调：只训练最后一层（freeze=10 冻结前10层）</span></span><br><span class="line">model.train(</span><br><span class="line">    data=<span class="string">&quot;my_dataset.yaml&quot;</span>,</span><br><span class="line">    epochs=<span class="number">50</span>,</span><br><span class="line">    freeze=<span class="number">10</span>,        <span class="comment"># 冻结骨干网络</span></span><br><span class="line">    lr0=<span class="number">0.001</span>,        <span class="comment"># 较小学习率</span></span><br><span class="line">    imgsz=<span class="number">640</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>为什么迁移学习有效？</strong> 预训练模型已经学会了提取边缘、纹理、形状等通用特征，你只需要让它学会识别你的特定目标。</p>
+</blockquote>
+<hr>
+<h2 id="七、模型评估指标"><a href="#七、模型评估指标" class="headerlink" title="七、模型评估指标"></a>七、模型评估指标</h2><table>
+<thead>
+<tr>
+<th>指标</th>
+<th>公式</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>IoU</strong></td>
+<td>交集面积 &#x2F; 并集面积</td>
+<td>预测框和真实框的重合度，&gt;0.5 算检测到</td>
+</tr>
+<tr>
+<td><strong>Precision</strong></td>
+<td>TP &#x2F; (TP + FP)</td>
+<td>预测为正的有多少是对的（不要误报）</td>
+</tr>
+<tr>
+<td><strong>Recall</strong></td>
+<td>TP &#x2F; (TP + FN)</td>
+<td>真实为正的有多少被找到（不要漏报）</td>
+</tr>
+<tr>
+<td><strong>F1</strong></td>
+<td>2×P×R &#x2F; (P+R)</td>
+<td>Precision 和 Recall 的调和平均</td>
+</tr>
+<tr>
+<td><strong>mAP</strong></td>
+<td>各类别 AP 的均值</td>
+<td>目标检测的核心指标，越高越好</td>
+</tr>
+</tbody></table>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># YOLOv8 训练后自动评估</span></span><br><span class="line">model = YOLO(<span class="string">&quot;runs/detect/train/weights/best.pt&quot;</span>)</span><br><span class="line">metrics = model.val()</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;mAP50: <span class="subst">&#123;metrics.box.map50:<span class="number">.3</span>f&#125;</span>&quot;</span>)    <span class="comment"># IoU=0.5 时的 mAP</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;mAP50-95: <span class="subst">&#123;metrics.box.<span class="built_in">map</span>:<span class="number">.3</span>f&#125;</span>&quot;</span>)   <span class="comment"># IoU=0.5:0.95 的 mAP</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="指标速记"><a href="#指标速记" class="headerlink" title="指标速记"></a>指标速记</h3><ul>
+<li><strong>Precision 高</strong> → 宁可漏掉也不要误报（如：人脸支付）</li>
+<li><strong>Recall 高</strong> → 宁可误报也不要漏掉（如：癌症筛查）</li>
+<li><strong>mAP &gt; 0.5</strong> → 基本可用</li>
+<li><strong>mAP &gt; 0.7</strong> → 效果不错</li>
+<li><strong>mAP &gt; 0.9</strong> → 优秀</li>
+</ul>
+<hr>
+<h2 id="八、最佳实践"><a href="#八、最佳实践" class="headerlink" title="八、最佳实践"></a>八、最佳实践</h2><ol>
+<li><strong>数据为王</strong>：标注质量 &gt; 数据量 &gt; 模型选择</li>
+<li><strong>先跑通再优化</strong>：用 YOLOv8n 验证流程，再换大模型提精度</li>
+<li><strong>数据增强</strong>：旋转、翻转、亮度调整、Mosaic 拼接</li>
+<li><strong>GPU 必需</strong>：训练必须有 GPU（推荐 RTX 3060+），推理 CPU 也行</li>
+<li><strong>部署优先 ONNX</strong>：跨平台兼容性最好</li>
+</ol>
+<h2 id="九、常见问题"><a href="#九、常见问题" class="headerlink" title="九、常见问题"></a>九、常见问题</h2><p><strong>Q: 少量数据能训练吗？</strong><br>A: 可以，用迁移学习 + 数据增强，100-500 张标注图片即可微调。</p>
+<p><strong>Q: YOLOv5 还是 YOLOv8？</strong><br>A: 新项目用 v8（ultralytics 维护，API 更简洁），老项目维护用 v5。</p>
+<p><strong>Q: 检测效果不好怎么办？</strong><br>A: 检查标注质量 → 增加训练数据 → 调整 anchor size → 换更大的模型。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://youlazi.github.io">pyrrhus</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://youlazi.github.io/2026/03/30/2026-03-30-cv-quickstart/">https://youlazi.github.io/2026/03/30/2026-03-30-cv-quickstart/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://youlazi.github.io" target="_blank">pyrrhus的技术小屋</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/YOLO/">YOLO</a><a class="post-meta__tags" href="/tags/TensorRT/">TensorRT</a><a class="post-meta__tags" href="/tags/Faster-RCNN/">Faster-RCNN</a><a class="post-meta__tags" href="/tags/PaddlePaddle/">PaddlePaddle</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/2026/03/30/2026-03-30-scholarship-system-tech-doc/" title="数字化奖学金评定系统 技术文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">数字化奖学金评定系统 技术文档</div></div><div class="info-2"><div class="info-item-1">数字化奖学金评定系统 技术文档1. 项目概述项目背景传统奖学金评定流程依赖纸质材料，存在审批效率低、材料核实困难、流程不透明等问题。本项目构建数字化奖学金评定系统，实现从申请、审核到公示的全流程线上化，并集成OCR证件识别技术提升材料核验效率。 项目目标 实现奖学金申请全流程线上化 多级审批工作流自动化 OCR证件识别自动核验材料 三端协同（Web管理端 + 移动端 + 后端API）  项目成果 🏆 省级大创项目 🏆 中国计算机设计大赛国家级三等奖 服务 千名学生，已稳定运行 多级审批工作流完整实现 PaddleOCR证件识别集成   2. 系统架构整体架构123456789101112131415161718192021222324252627282930┌──────────────┐  ┌──────────────┐│  Web管理端    │  │ UniApp移动端  ││  (Vue)       │  │ (学生申请)    │└──────┬───────┘  └──────┬───────┘       │                 │       ...</div></div></div></a><a class="pagination-related" href="/2026/03/30/2026-03-30-fire-detection-tech-doc/" title="工业级火灾智能监测系统 技术文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">工业级火灾智能监测系统 技术文档</div></div><div class="info-2"><div class="info-item-1">工业级火灾智能监测系统 技术文档1. 项目概述项目背景传统火灾监测依赖烟雾传感器，存在误报率高、响应慢、覆盖范围有限等问题。本项目利用深度学习目标检测技术，对视频流进行实时火灾识别，实现毫秒级响应的智能火灾监测。 项目目标 训练高精度火灾检测模型（mAP@0.5 ≥ 98%） 实现TensorRT加速推理（&lt;500ms&#x2F;帧） 支持大规模视频并发监控（99+路） 提供完整的告警链路（Web通知 + 邮件 + 短信）  项目成果 🏆 国家级大创项目 🏆 中国计算机设计大赛国家级三等奖 mAP@0.5 达 98%+ TensorRT推理 &lt;500ms 支持 99+路视频并发监控 训练样本 12000+   2. 系统架构整体架构12345678910111213141516171819202122232425262728293031┌──────────────────────────────────────────────┐│              Web 管理前端 (Vue)               ││        监控大屏 / 告警管理 / ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/2026/03/30/2026-03-30-fire-detection-tech-doc/" title="工业级火灾智能监测系统 技术文档"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-03-30</div><div class="info-item-2">工业级火灾智能监测系统 技术文档</div></div><div class="info-2"><div class="info-item-1">工业级火灾智能监测系统 技术文档1. 项目概述项目背景传统火灾监测依赖烟雾传感器，存在误报率高、响应慢、覆盖范围有限等问题。本项目利用深度学习目标检测技术，对视频流进行实时火灾识别，实现毫秒级响应的智能火灾监测。 项目目标 训练高精度火灾检测模型（mAP@0.5 ≥ 98%） 实现TensorRT加速推理（&lt;500ms&#x2F;帧） 支持大规模视频并发监控（99+路） 提供完整的告警链路（Web通知 + 邮件 + 短信）  项目成果 🏆 国家级大创项目 🏆 中国计算机设计大赛国家级三等奖 mAP@0.5 达 98%+ TensorRT推理 &lt;500ms 支持 99+路视频并发监控 训练样本 12000+   2. 系统架构整体架构12345678910111213141516171819202122232425262728293031┌──────────────────────────────────────────────┐│              Web 管理前端 (Vue)               ││        监控大屏 / 告警管理 / ...</div></div></div></a></div></div><hr class="custom-hr"/><div id="post-comment"><div class="comment-head"><div class="comment-headline"><i class="fas fa-comments fa-fw"></i><span> 评论</span></div></div><div class="comment-wrap"><div><div id="giscus-wrap"></div></div></div></div></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">pyrrhus</div><div class="author-info-description">AI应用开发者 | 技术分享者</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">5</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/YouLaZi" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:3179738838@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a><a class="social-icon" href="tencent://AddContact/?fromId=50&amp;fromSubId=1&amp;subcmd=all&amp;uin=3179738838" target="_blank" title="QQ"><i class="fab fa-qq"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的技术小屋！这里记录着我的成长与探索。</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BC%A0%E7%BB%9F-AI-CV-%E5%BF%AB%E9%80%9F%E5%85%A5%E9%97%A8"><span class="toc-number">1.</span> <span class="toc-text">传统 AI-CV 快速入门</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E8%AE%A1%E7%AE%97%E6%9C%BA%E8%A7%86%E8%A7%89%E5%9F%BA%E7%A1%80"><span class="toc-number">1.1.</span> <span class="toc-text">一、计算机视觉基础</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E4%BB%BB%E5%8A%A1"><span class="toc-number">1.1.1.</span> <span class="toc-text">核心任务</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81YOLO-%E7%B3%BB%E5%88%97%EF%BC%88You-Only-Look-Once%EF%BC%89"><span class="toc-number">1.2.</span> <span class="toc-text">二、YOLO 系列（You Only Look Once）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="toc-number">1.2.1.</span> <span class="toc-text">核心思想</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#YOLO-%E6%A3%80%E6%B5%8B%E5%8E%9F%E7%90%86"><span class="toc-number">1.2.2.</span> <span class="toc-text">YOLO 检测原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#YOLOv8-%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B"><span class="toc-number">1.2.3.</span> <span class="toc-text">YOLOv8 快速上手</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%95%B0%E6%8D%AE%E6%A0%87%E6%B3%A8%E5%B7%A5%E5%85%B7"><span class="toc-number">1.2.4.</span> <span class="toc-text">数据标注工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#dataset-yaml-%E9%85%8D%E7%BD%AE"><span class="toc-number">1.2.5.</span> <span class="toc-text">dataset.yaml 配置</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81Faster-R-CNN%EF%BC%88%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%A3%80%E6%B5%8B%E5%99%A8%EF%BC%89"><span class="toc-number">1.3.</span> <span class="toc-text">三、Faster R-CNN（两阶段检测器）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8E-YOLO-%E5%AF%B9%E6%AF%94"><span class="toc-number">1.3.1.</span> <span class="toc-text">与 YOLO 对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%A4%E9%98%B6%E6%AE%B5%E6%B5%81%E7%A8%8B"><span class="toc-number">1.3.2.</span> <span class="toc-text">两阶段流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81PaddlePaddle%EF%BC%88%E7%99%BE%E5%BA%A6%E9%A3%9E%E6%A1%A8%EF%BC%89"><span class="toc-number">1.4.</span> <span class="toc-text">四、PaddlePaddle（百度飞桨）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#PaddleOCR-%E5%BF%AB%E9%80%9F%E4%B8%8A%E6%89%8B"><span class="toc-number">1.4.1.</span> <span class="toc-text">PaddleOCR 快速上手</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PaddleDetection"><span class="toc-number">1.4.2.</span> <span class="toc-text">PaddleDetection</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81TensorRT%EF%BC%88%E6%A8%A1%E5%9E%8B%E5%8A%A0%E9%80%9F%E6%8E%A8%E7%90%86%EF%BC%89"><span class="toc-number">1.5.</span> <span class="toc-text">五、TensorRT（模型加速推理）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81-TensorRT"><span class="toc-number">1.5.1.</span> <span class="toc-text">为什么需要 TensorRT</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E9%83%A8%E7%BD%B2%E6%B5%81%E7%A8%8B"><span class="toc-number">1.5.2.</span> <span class="toc-text">部署流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E8%BF%81%E7%A7%BB%E5%AD%A6%E4%B9%A0%E5%AE%9E%E6%88%98"><span class="toc-number">1.6.</span> <span class="toc-text">六、迁移学习实战</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%A8%A1%E5%9E%8B%E8%AF%84%E4%BC%B0%E6%8C%87%E6%A0%87"><span class="toc-number">1.7.</span> <span class="toc-text">七、模型评估指标</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%8C%87%E6%A0%87%E9%80%9F%E8%AE%B0"><span class="toc-number">1.7.1.</span> <span class="toc-text">指标速记</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.8.</span> <span class="toc-text">八、最佳实践</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">1.9.</span> <span class="toc-text">九、常见问题</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-ai-dev-quickstart/" title="AI 应用开发快速入门">AI 应用开发快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-frontend-devops-quickstart/" title="前端与工程化快速入门">前端与工程化快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-backend-architecture-quickstart/" title="后端架构快速入门">后端架构快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-fire-detection-tech-doc/" title="工业级火灾智能监测系统 技术文档">工业级火灾智能监测系统 技术文档</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-cv-quickstart/" title="传统 AI-CV 快速入门">传统 AI-CV 快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By pyrrhus</span></div><div class="footer_custom_text"><p style="color: #fff;">pyrrhus的技术小屋©2026|主题 
+<a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></p>
+</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><a id="to_comment" href="#post-comment" title="前往评论"><i class="fas fa-comments"></i></a><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : ''
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script><script>(() => {
+  const isShuoshuo = GLOBAL_CONFIG_SITE.pageType === 'shuoshuo'
+  const option = null
+
+  const getGiscusTheme = theme => theme === 'dark' ? 'dark' : 'light'
+
+  const createScriptElement = config => {
+    const ele = document.createElement('script')
+    Object.entries(config).forEach(([key, value]) => {
+      ele.setAttribute(key, value)
+    })
+    return ele
+  }
+
+  const loadGiscus = (el = document, key) => {
+    const mappingConfig = isShuoshuo
+      ? { 'data-mapping': 'specific', 'data-term': key }
+      : { 'data-mapping': (option && option['data-mapping']) || 'pathname' }
+
+    const giscusConfig = {
+      src: 'https://giscus.app/client.js',
+      'data-repo': 'YouLaZi/youlazi.github.io',
+      'data-repo-id': '',
+      'data-category-id': '',
+      'data-theme': getGiscusTheme(document.documentElement.getAttribute('data-theme')),
+      'data-reactions-enabled': '1',
+      crossorigin: 'anonymous',
+      async: true,
+      ...option,
+      ...mappingConfig
+    }
+
+    const scriptElement = createScriptElement(giscusConfig)
+
+    el.querySelector('#giscus-wrap').appendChild(scriptElement)
+
+    if (isShuoshuo) {
+      window.shuoshuoComment.destroyGiscus = () => {
+        if (el.children.length) {
+          el.innerHTML = ''
+          el.classList.add('no-comment')
+        }
+      }
+    }
+  }
+
+  const changeGiscusTheme = theme => {
+    const iframe = document.querySelector('#giscus-wrap iframe')
+    if (iframe) {
+      const message = {
+        giscus: {
+          setConfig: {
+            theme: getGiscusTheme(theme)
+          }
+        }
+      }
+      iframe.contentWindow.postMessage(message, 'https://giscus.app')
+    }
+  }
+
+  btf.addGlobalFn('themeChange', changeGiscusTheme, 'giscus')
+
+  if (isShuoshuo) {
+    'Giscus' === 'Giscus'
+      ? window.shuoshuoComment = { loadComment: loadGiscus }
+      : window.loadOtherComment = loadGiscus
+    return
+  }
+
+  if ('Giscus' === 'Giscus' || !false) {
+    if (false) btf.loadComment(document.getElementById('giscus-wrap'), loadGiscus)
+    else loadGiscus()
+  } else {
+    window.loadOtherComment = loadGiscus
+  }
+})()</script></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
