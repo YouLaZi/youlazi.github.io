@@ -1,462 +1,264 @@
 /**
- * Hexo Code Runner 插件
- * 
- * 给博客代码块添加"一键运行"功能
- * 支持 Go, Python, JavaScript, Java, C, C++, TypeScript 等 40+ 语言
- * 后端: Piston API (免费，无需 key)
+ * Hexo Code Runner 插件 v2
+ * 博客代码块一键运行功能
+ * 支持 Go, Python, JS, Java, C/C++, Rust, TS 等 40+ 语言
+ * 后端: Piston API (免费开源)
  */
 
 'use strict';
 
 const PistonAPI = 'https://emkc.org/api/v2/piston/execute';
 
-// 支持的语言别名映射
 const LANG_MAP = {
-  'go': 'go',
-  'golang': 'go',
-  'python': 'python',
-  'py': 'python',
-  'python3': 'python',
-  'javascript': 'javascript',
-  'js': 'javascript',
-  'nodejs': 'javascript',
-  'typescript': 'typescript',
-  'ts': 'typescript',
-  'java': 'java',
-  'c': 'c',
-  'cpp': 'c++',
-  'c++': 'c++',
-  'rust': 'rust',
-  'rs': 'rust',
-  'ruby': 'ruby',
-  'rb': 'ruby',
-  'php': 'php',
-  'swift': 'swift',
-  'kotlin': 'kotlin',
-  'kt': 'kotlin',
-  'scala': 'scala',
-  'r': 'r',
-  'shell': 'bash',
-  'bash': 'bash',
-  'sh': 'bash',
-  'lua': 'lua',
-  'perl': 'perl',
-  'sql': 'sql',
-  'mysql': 'sql',
+  go:'go', golang:'go', python:'python', py:'python', python3:'python',
+  javascript:'javascript', js:'javascript', nodejs:'javascript',
+  typescript:'typescript', ts:'typescript', java:'java', c:'c',
+  cpp:'c++', 'c++':'c++', rust:'rust', rs:'rust', ruby:'ruby', rb:'ruby',
+  php:'php', swift:'swift', kotlin:'kotlin', kt:'kotlin', scala:'scala',
+  r:'r', shell:'bash', bash:'bash', sh:'bash', lua:'lua', perl:'perl',
+  sql:'sql', mysql:'sql', dart:'dart', csharp:'csharp', 'c#':'csharp',
+  fsharp:'fsharp', haskell:'haskell', lua:'lua', nim:'nim', objectivec:'objective-c',
+  pascal:'pascal', sml:'sml', tcl:'tcl',
 };
 
-// 需要输入的语言（默认添加 stdin）
-const NEEDS_INPUT_LANGS = new Set(['c', 'c++', 'java', 'kotlin', 'scala', 'r', 'sql', 'mysql']);
-
-function runCode(lang, code, stdin = '') {
+async function runCode(lang, code, stdin) {
   const mappedLang = LANG_MAP[lang.toLowerCase()] || lang.toLowerCase();
-  const body = {
-    language: mappedLang,
-    version: '*',  // latest
-    files: [{ content: code }],
-    stdin: stdin || '',
-  };
-
-  return fetch(PistonAPI, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-    .then(r => r.json())
-    .then(data => {
-      if (data.code !== 0 && data.message) {
-        return { success: false, output: data.message, error: data.compile ? 'Compile Error' : 'Runtime Error' };
-      }
-      return {
-        success: true,
-        output: (data.run && data.run.output) || (data.compile && data.compile.output) || '(no output)',
-        stderr: (data.run && data.run.stderr) || '',
-        exitCode: data.run ? data.run.exitCode : 0,
-        runtime: data.run ? (data.run.signal ? `signal: ${data.run.signal}` : `exited in ${data.run.runtime || '?'}ms`) : '',
-      };
-    })
-    .catch(err => {
-      return { success: false, output: '', error: `Network error: ${err.message}` };
+  try {
+    const res = await fetch(PistonAPI, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ language: mappedLang, version: '*', files: [{ content: code }], stdin: stdin || '' }),
     });
+    const data = await res.json();
+    if (data.code !== 0 && data.message) return { ok: false, output: data.message, type: 'API Error' };
+    const run = data.run || {};
+    const compile = data.compile || {};
+    const compileOutput = compile.output || '';
+    const runOutput = run.output || '';
+    const stderr = run.stderr || '';
+    return {
+      ok: run.exitCode === 0 || run.signal === undefined,
+      output: compileOutput + runOutput,
+      stderr: stderr,
+      exitCode: run.exitCode,
+      runtime: run.signal ? `signal: ${run.signal}` : `exited in ${run.cpu_time || '?'}ms`,
+    };
+  } catch (e) {
+    return { ok: false, output: e.message, type: 'Network Error' };
+  }
 }
 
-// --- UI ---
-
-const STYLE_ID = 'hexo-code-runner-style';
+// ============ UI ============
 
 const CSS = `
-#hexo-code-runner-panel {
-  position: fixed;
-  top: 0;
-  right: -420px;
-  width: 400px;
-  height: 100vh;
-  background: #1e1e2e;
-  color: #cdd6f4;
-  z-index: 99999;
-  box-shadow: -4px 0 20px rgba(0,0,0,0.3);
-  transition: right 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
-  font-size: 13px;
+#hcr-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99998;
+  display: none; transition: opacity 0.2s;
 }
-#hexo-code-runner-panel.open { right: 0; }
-#hexo-code-runner-panel .panel-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 12px 16px;
-  background: #181825;
-  border-bottom: 1px solid #313244;
+#hcr-overlay.show { display: block; }
+#hcr-panel {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  width: min(90vw, 640px); max-height: 80vh; background: #1e1e2e; color: #cdd6f4;
+  z-index: 99999; border-radius: 12px; overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  display: none; flex-direction: column;
+  font-family: 'JetBrains Mono','Fira Code','Consolas',monospace; font-size: 13px;
 }
-#hexo-code-runner-panel .panel-header h3 {
-  margin: 0;
-  font-size: 14px;
-  color: #cba6f7;
-  font-weight: 600;
+#hcr-panel.show { display: flex; }
+#hcr-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; background: #181825; border-bottom: 1px solid #313244;
 }
-#hexo-code-runner-panel .panel-header .close-btn {
-  background: none;
-  border: none;
-  color: #6c7086;
-  font-size: 20px;
-  cursor: pointer;
-  padding: 0 4px;
-  line-height: 1;
-}
-#hexo-code-runner-panel .panel-header .close-btn:hover { color: #f38ba8; }
-#hexo-code-runner-panel .panel-lang {
-  padding: 8px 16px;
-  background: #11111b;
-  color: #a6adc8;
-  font-size: 12px;
-  border-bottom: 1px solid #313244;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-#hexo-code-runner-panel .panel-lang .lang-badge {
-  background: #313244;
-  padding: 2px 8px;
-  border-radius: 4px;
-  color: #89b4fa;
-  font-weight: 600;
-}
-#hexo-code-runner-panel .panel-status {
-  padding: 6px 16px;
-  font-size: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-#hexo-code-runner-panel .panel-status.success { color: #a6e3a1; }
-#hexo-code-runner-panel .panel-status.error { color: #f38ba8; }
-#hexo-code-runner-panel .panel-status.running { color: #f9e2af; }
-#hexo-code-runner-panel .panel-status .spinner {
-  display: inline-block;
-  width: 12px;
-  height: 12px;
-  border: 2px solid #313244;
-  border-top-color: #f9e2af;
-  border-radius: 50%;
-  animation: hcr-spin 0.6s linear infinite;
-}
+#hcr-header h3 { margin: 0; font-size: 15px; color: #cba6f7; font-weight: 600; }
+#hcr-close { background: none; border: none; color: #6c7086; font-size: 22px; cursor: pointer; }
+#hcr-close:hover { color: #f38ba8; }
+#hcr-meta { padding: 8px 20px; background: #11111b; border-bottom: 1px solid #313244; font-size: 12px; color: #a6adc8; display: flex; gap: 12px; align-items: center; }
+#hcr-meta .badge { background: #313244; padding: 2px 10px; border-radius: 4px; color: #89b4fa; font-weight: 600; }
+#hcr-status { padding: 8px 20px; font-size: 12px; }
+#hcr-status.ok { color: #a6e3a1; }
+#hcr-status.err { color: #f38ba8; }
+#hcr-status.run { color: #f9e2af; }
+.spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid #313244; border-top-color: #f9e2af; border-radius: 50%; animation: hcr-spin .6s linear infinite; }
 @keyframes hcr-spin { to { transform: rotate(360deg); } }
-#hexo-code-runner-panel .panel-output {
-  flex: 1;
-  overflow: auto;
-  padding: 12px 16px;
-  white-space: pre-wrap;
-  word-break: break-all;
-  line-height: 1.6;
-  background: #1e1e2e;
+#hcr-output {
+  flex: 1; overflow: auto; padding: 14px 20px; white-space: pre-wrap; word-break: break-all; line-height: 1.6; min-height: 100px;
 }
-#hexo-code-runner-panel .panel-output .output-line { margin: 0; }
-#hexo-code-runner-panel .panel-stdin {
-  padding: 8px 16px;
-  border-top: 1px solid #313244;
+#hcr-stdin-area { padding: 10px 20px; border-top: 1px solid #313244; display: none; }
+#hcr-stdin-area textarea {
+  width: 100%; min-height: 50px; max-height: 100px; background: #11111b; color: #cdd6f4;
+  border: 1px solid #313244; border-radius: 6px; padding: 8px; font-family: inherit; font-size: 12px; resize: vertical; outline: none; box-sizing: border-box;
 }
-#hexo-code-runner-panel .panel-stdin textarea {
-  width: 100%;
-  min-height: 60px;
-  max-height: 120px;
-  background: #11111b;
-  color: #cdd6f4;
-  border: 1px solid #313244;
-  border-radius: 6px;
-  padding: 8px;
-  font-family: inherit;
-  font-size: 12px;
-  resize: vertical;
-  outline: none;
-  box-sizing: border-box;
-}
-#hexo-code-runner-panel .panel-stdin textarea:focus { border-color: #89b4fa; }
-#hexo-code-runner-panel .panel-actions {
-  padding: 8px 16px;
-  border-top: 1px solid #313244;
-  display: flex;
-  gap: 8px;
-}
-#hexo-code-runner-panel .panel-actions button {
-  flex: 1;
-  padding: 8px;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-#hexo-code-runner-panel .btn-run {
-  background: #a6e3a1;
-  color: #1e1e2e;
-}
-#hexo-code-runner-panel .btn-run:hover { background: #94e2d5; }
-#hexo-code-runner-panel .btn-run:disabled { opacity: 0.5; cursor: not-allowed; }
-#hexo-code-runner-panel .btn-copy {
-  background: #313244;
-  color: #cdd6f4;
-}
-#hexo-code-runner-panel .btn-copy:hover { background: #45475a; }
+#hcr-stdin-area textarea:focus { border-color: #89b4fa; }
+#hcr-actions { padding: 10px 20px; border-top: 1px solid #313244; display: flex; gap: 8px; }
+#hcr-actions button { flex: 1; padding: 10px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+#hcr-run { background: #a6e3a1; color: #1e1e2e; }
+#hcr-run:hover { background: #94e2d5; }
+#hcr-run:disabled { opacity: .5; cursor: not-allowed; }
+#hcr-copy { background: #313244; color: #cdd6f4; }
+#hcr-copy:hover { background: #45475a; }
 
-/* Run button on code blocks */
-.hcr-run-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
-  z-index: 10;
-  background: linear-gradient(135deg, #a6e3a1, #94e2d5);
-  color: #1e1e2e;
-  border: none;
-  border-radius: 6px;
-  padding: 4px 10px;
-  font-size: 12px;
-  font-weight: 700;
-  font-family: system-ui, sans-serif;
-  cursor: pointer;
-  opacity: 0.7;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.hcr-run-btn:hover { opacity: 1; transform: scale(1.05); box-shadow: 0 2px 8px rgba(166,227,161,0.4); }
-.hcr-run-btn svg { width: 12px; height: 12px; }
-.hcr-run-btn.running { opacity: 0.5; pointer-events: none; }
-
-/* Light theme support */
-[data-theme="light"] #hexo-code-runner-panel,
-html.light #hexo-code-runner-panel {
-  background: #ffffff;
-  color: #4c4f69;
-  box-shadow: -4px 0 20px rgba(0,0,0,0.1);
-}
-[data-theme="light"] #hexo-code-runner-panel .panel-header,
-html.light #hexo-code-runner-panel .panel-header { background: #eff1f5; border-color: #ccd0da; }
-[data-theme="light"] #hexo-code-runner-panel .panel-header h3,
-html.light #hexo-code-runner-panel .panel-header h3 { color: #8839ef; }
-[data-theme="light"] #hexo-code-runner-panel .panel-lang,
-html.light #hexo-code-runner-panel .panel-lang { background: #e6e9ef; border-color: #ccd0da; color: #5c5f77; }
-[data-theme="light"] #hexo-code-runner-panel .panel-lang .lang-badge,
-html.light #hexo-code-runner-panel .panel-lang .lang-badge { background: #ccd0da; color: #8839ef; }
-[data-theme="light"] #hexo-code-runner-panel .panel-output,
-html.light #hexo-code-runner-panel .panel-output { background: #fff; }
-[data-theme="light"] #hexo-code-runner-panel .panel-stdin textarea,
-html.light #hexo-code-runner-panel .panel-stdin textarea { background: #eff1f5; color: #4c4f69; border-color: #ccd0da; }
-[data-theme="light"] #hexo-code-runner-panel .panel-actions,
-html.light #hexo-code-runner-panel .panel-actions { border-color: #ccd0da; }
-[data-theme="light"] #hexo-code-runner-panel .btn-copy,
-html.light #hexo-code-runner-panel .btn-copy { background: #ccd0da; color: #4c4f69; }
+/* Light theme */
+html[data-theme=light] #hcr-panel { background: #fff; color: #4c4f69; box-shadow: 0 20px 60px rgba(0,0,0,0.12); }
+html[data-theme=light] #hcr-header { background: #eff1f5; border-color: #ccd0da; }
+html[data-theme=light] #hcr-header h3 { color: #8839ef; }
+html[data-theme=light] #hcr-meta { background: #e6e9ef; border-color: #ccd0da; color: #5c5f77; }
+html[data-theme=light] #hcr-meta .badge { background: #ccd0da; color: #8839ef; }
+html[data-theme=light] #hcr-output { background: #fff; }
+html[data-theme=light] #hcr-stdin-area textarea { background: #eff1f5; color: #4c4f69; border-color: #ccd0da; }
+html[data-theme=light] #hcr-actions { border-color: #ccd0da; }
+html[data-theme=light] #hcr-copy { background: #ccd0da; color: #4c4f69; }
 `;
 
 function injectStyles() {
-  if (document.getElementById(STYLE_ID)) return;
-  const style = document.createElement('style');
-  style.id = STYLE_ID;
-  style.textContent = CSS;
-  document.head.appendChild(style);
+  if (document.getElementById('hcr-styles')) return;
+  const s = document.createElement('style');
+  s.id = 'hcr-styles';
+  s.textContent = CSS;
+  document.head.appendChild(s);
 }
 
-function createPanel() {
-  if (document.getElementById('hexo-code-runner-panel')) return;
-  
-  const panel = document.createElement('div');
-  panel.id = 'hexo-code-runner-panel';
-  panel.innerHTML = `
-    <div class="panel-header">
-      <h3>▶ Code Runner</h3>
-      <button class="close-btn" onclick="document.getElementById('hexo-code-runner-panel').classList.remove('open')">✕</button>
+function createUI() {
+  if (document.getElementById('hcr-overlay')) return;
+  document.body.insertAdjacentHTML('beforeend', `
+    <div id="hcr-overlay"></div>
+    <div id="hcr-panel">
+      <div id="hcr-header"><h3>▶ Code Runner</h3><button id="hcr-close">✕</button></div>
+      <div id="hcr-meta"><span>Language:</span><span class="badge" id="hcr-lang">-</span></div>
+      <div id="hcr-status"></div>
+      <div id="hcr-output"></div>
+      <div id="hcr-stdin-area"><textarea id="hcr-stdin" placeholder="输入 stdin（可选）"></textarea></div>
+      <div id="hcr-actions">
+        <button id="hcr-run">▶ 运行</button>
+        <button id="hcr-copy">📋 复制输出</button>
+      </div>
     </div>
-    <div class="panel-lang">
-      <span>Language:</span> <span class="lang-badge" id="hcr-lang">-</span>
-    </div>
-    <div class="panel-status" id="hcr-status"></div>
-    <div class="panel-output" id="hcr-output"></div>
-    <div class="panel-stdin" id="hcr-stdin-wrap" style="display:none;">
-      <textarea id="hcr-stdin" placeholder="输入（stdin），按 Ctrl+Enter 运行..."></textarea>
-    </div>
-    <div class="panel-actions">
-      <button class="btn-run" id="hcr-run-btn" onclick="hexoCodeRunner.run()">▶ 运行</button>
-      <button class="btn-copy" onclick="hexoCodeRunner.copyOutput()">📋 复制输出</button>
-    </div>
-  `;
-  document.body.appendChild(panel);
+  `);
+  document.getElementById('hcr-close').onclick = closePanel;
+  document.getElementById('hcr-overlay').onclick = closePanel;
+  document.getElementById('hcr-run').onclick = doRun;
+  document.getElementById('hcr-copy').onclick = doCopy;
+}
 
-  // Keyboard shortcut: Ctrl+Enter to run
-  document.getElementById('hcr-stdin').addEventListener('keydown', e => {
-    if (e.ctrlKey && e.key === 'Enter') {
-      e.preventDefault();
-      hexoCodeRunner.run();
-    }
+let currentLang = '', currentCode = '';
+
+function openPanel(lang, code) {
+  currentLang = lang;
+  currentCode = code;
+  document.getElementById('hcr-lang').textContent = lang;
+  document.getElementById('hcr-output').textContent = '';
+  document.getElementById('hcr-status').textContent = '';
+  document.getElementById('hcr-status').className = '';
+  document.getElementById('hcr-run').disabled = false;
+  document.getElementById('hcr-stdin-area').style.display = 'block';
+  document.getElementById('hcr-stdin').value = '';
+  document.getElementById('hcr-panel').classList.add('show');
+  document.getElementById('hcr-overlay').classList.add('show');
+}
+
+function closePanel() {
+  document.getElementById('hcr-panel').classList.remove('show');
+  document.getElementById('hcr-overlay').classList.remove('show');
+}
+
+async function doRun() {
+  const btn = document.getElementById('hcr-run');
+  const status = document.getElementById('hcr-status');
+  const output = document.getElementById('hcr-output');
+  btn.disabled = true;
+  status.className = 'run';
+  status.innerHTML = '<span class="spinner"></span> 正在运行...';
+  output.textContent = '';
+
+  const result = await runCode(currentLang, currentCode, document.getElementById('hcr-stdin').value);
+  btn.disabled = false;
+  if (result.ok) {
+    status.className = 'ok';
+    status.textContent = `✅ 运行成功 · ${result.runtime}`;
+  } else {
+    status.className = 'err';
+    status.textContent = `❌ ${result.type || 'Error'}`;
+  }
+  output.textContent = result.output + (result.stderr ? '\n\n[stderr]\n' + result.stderr : '');
+  output.scrollTop = 0;
+}
+
+function doCopy() {
+  const text = document.getElementById('hcr-output').textContent;
+  if (!text) return;
+  navigator.clipboard.writeText(text).then(() => {
+    const b = document.getElementById('hcr-copy');
+    b.textContent = '✅ 已复制';
+    setTimeout(() => b.textContent = '📋 复制输出', 1500);
   });
 }
+
+// ============ Detect language from Butterfly figure.highlight ============
+
+function getLangFromFigure(figure) {
+  const cls = figure.className || '';
+  // Butterfly: class="highlight go" or class="highlight language-go"
+  const m = cls.match(/highlight\s+(?:language-)?(\w+)/);
+  return m ? m[1] : '';
+}
+
+// ============ Extract clean code text from highlighted HTML ============
+
+function extractCode(figure) {
+  // Try to find td.code > pre (Butterfly table layout)
+  const tdCode = figure.querySelector('td.code');
+  if (tdCode) {
+    const pre = tdCode.querySelector('pre');
+    if (pre) return pre.textContent;
+  }
+  // Fallback: figure > pre > code
+  const pre = figure.querySelector('pre');
+  if (pre) return pre.textContent;
+  // Last resort: figure itself
+  return figure.textContent;
+}
+
+// ============ Add run buttons ============
 
 function addRunButtons() {
-  const blocks = document.querySelectorAll('figure.highlight, .code-container pre, pre code');
-  
-  blocks.forEach(block => {
-    if (block.querySelector('.hcr-run-btn')) return;
-    if (block.closest('#hexo-code-runner-panel')) return;
-
-    // Make parent position relative
-    const container = block.closest('figure') || block.parentElement;
-    if (container) container.style.position = 'relative';
-
-    // Detect language
-    let lang = '';
-    const figure = block.closest('figure');
-    if (figure) {
-      const classList = figure.className || '';
-      const match = classList.match(/language-(\w+)/);
-      if (match) lang = match[1];
-      const table = figure.querySelector('.code-header');
-      if (table) {
-        const text = table.textContent || '';
-        const langMatch = text.match(/(\w+)/);
-        if (langMatch) lang = langMatch[1];
-      }
-    }
-    if (!lang) {
-      const classList = block.className || '';
-      const match = classList.match(/language-(\w+)/);
-      if (match) lang = match[1];
-    }
-
+  document.querySelectorAll('figure.highlight').forEach(figure => {
+    if (figure.querySelector('.hcr-run-btn')) return;
+    const lang = getLangFromFigure(figure);
     if (!lang || !LANG_MAP[lang.toLowerCase()]) return;
 
-    // Create button
     const btn = document.createElement('button');
     btn.className = 'hcr-run-btn';
-    btn.innerHTML = `<svg viewBox="0 0 16 16" fill="currentColor"><path d="M4.5 2A1.5 1.5 0 0 0 3 3.5v9A1.5 1.5 0 0 0 4.5 14h7a1.5 1.5 0 0 0 1.5-1.5v-9A1.5 1.5 0 0 0 11.5 2h-7zM6.38 5.17a.75.75 0 0 1 1.06-1.06l2.5 2.5a.75.75 0 0 1 0 1.06l-2.5 2.5a.75.75 0 0 1-1.06-1.06L8.19 7l-1.81-1.83z"/></svg> 运行`;
-    btn.addEventListener('click', (e) => {
+    btn.textContent = '▶ Run';
+    btn.style.cssText = 'position:relative;float:right;background:linear-gradient(135deg,#a6e3a1,#94e2d5);color:#1e1e2e;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;z-index:10;font-family:system-ui,sans-serif;margin:2px 0 0 8px;';
+    btn.onclick = (e) => {
       e.preventDefault();
       e.stopPropagation();
-      hexoCodeRunner.open(lang, block);
-    });
+      openPanel(lang, extractCode(figure));
+    };
 
-    container.insertBefore(btn, container.firstChild);
+    // Insert into Butterfly's code-header or as first child
+    const header = figure.querySelector('.code-header');
+    if (header) {
+      header.appendChild(btn);
+    } else {
+      // No header, create a small toolbar
+      const toolbar = document.createElement('div');
+      toolbar.style.cssText = 'display:flex;justify-content:flex-end;padding:2px 8px;background:#181825;';
+      toolbar.appendChild(btn);
+      figure.insertBefore(toolbar, figure.firstChild);
+    }
   });
 }
 
-// Global API
-window.hexoCodeRunner = {
-  currentLang: '',
-  currentCode: '',
+// ============ Init ============
 
-  open(lang, block) {
-    // Extract code text
-    let code = '';
-    const codeEl = block.querySelector('code');
-    if (codeEl) {
-      code = codeEl.textContent;
-    } else {
-      code = block.textContent;
-    }
-
-    this.currentLang = lang;
-    this.currentCode = code;
-
-    const panel = document.getElementById('hexo-code-runner-panel');
-    document.getElementById('hcr-lang').textContent = lang;
-    document.getElementById('hcr-output').textContent = '';
-    document.getElementById('hcr-status').textContent = '';
-    document.getElementById('hcr-status').className = 'panel-status';
-
-    // Show/hide stdin
-    const mappedLang = LANG_MAP[lang.toLowerCase()] || lang.toLowerCase();
-    const stdinWrap = document.getElementById('hcr-stdin-wrap');
-    if (NEEDS_INPUT_LANGS.has(mappedLang)) {
-      stdinWrap.style.display = 'block';
-      document.getElementById('hcr-stdin').value = '';
-    } else {
-      stdinWrap.style.display = 'none';
-    }
-
-    panel.classList.add('open');
-    document.getElementById('hcr-run-btn').disabled = false;
-  },
-
-  async run() {
-    const btn = document.getElementById('hcr-run-btn');
-    const status = document.getElementById('hcr-status');
-    const output = document.getElementById('hcr-output');
-    const stdin = document.getElementById('hcr-stdin').value;
-
-    btn.disabled = true;
-    status.className = 'panel-status running';
-    status.innerHTML = '<span class="spinner"></span> 正在运行...';
-    output.textContent = '';
-
-    const result = await runCode(this.currentLang, this.currentCode, stdin);
-
-    btn.disabled = false;
-    if (result.success) {
-      status.className = 'panel-status success';
-      status.textContent = `✅ 运行成功 · ${result.runtime}`;
-      output.textContent = result.output + (result.stderr ? '\n--- stderr ---\n' + result.stderr : '');
-    } else if (result.error) {
-      status.className = 'panel-status error';
-      status.textContent = `❌ ${result.error}`;
-      output.textContent = result.output || result.error;
-    } else {
-      status.className = 'panel-status success';
-      status.textContent = '✅ 运行完成';
-      output.textContent = result.output || '(no output)';
-    }
-
-    // Scroll output to top
-    output.scrollTop = 0;
-  },
-
-  copyOutput() {
-    const output = document.getElementById('hcr-output').textContent;
-    if (!output) return;
-    navigator.clipboard.writeText(output).then(() => {
-      const btn = document.querySelector('.btn-copy');
-      btn.textContent = '✅ 已复制';
-      setTimeout(() => btn.textContent = '📋 复制输出', 2000);
-    });
-  }
-};
-
-// Initialize
 function init() {
   injectStyles();
-  createPanel();
+  createUI();
   addRunButtons();
-
-  // Re-add buttons when page content changes (SPA-like behavior)
-  const observer = new MutationObserver(() => {
-    setTimeout(addRunButtons, 500);
-  });
-  observer.observe(document.body, { childList: true, subtree: true });
+  // Re-scan on DOM changes
+  const obs = new MutationObserver(() => setTimeout(addRunButtons, 300));
+  obs.observe(document.body, { childList: true, subtree: true });
 }
 
-// Run when DOM ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
