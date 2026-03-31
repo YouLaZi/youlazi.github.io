@@ -23,15 +23,15 @@ async function runCode(lang, code, stdin) {
   const langId = LANG_MAP[lang.toLowerCase()];
   if (!langId) return { ok: false, output: `Unsupported language: ${lang}`, type: 'Error' };
   try {
-    const btoa = s => Buffer ? Buffer.from(s).toString('base64') : btoa(unescape(encodeURIComponent(s)));
-    const atob = s => decodeURIComponent(escape(atob(s)));
+    const utf8ToB64 = s => btoa(unescape(encodeURIComponent(s)));
+    const b64ToUtf8 = s => decodeURIComponent(escape(atob(s)));
     const res = await fetch(JUDGE0_BATCH, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ submissions: [{
         language_id: langId,
-        source_code: btoa(code),
-        stdin: btoa(stdin || ''),
+        source_code: utf8ToB64(code),
+        stdin: utf8ToB64(stdin || ''),
         cpu_time_limit: 5,
         memory_limit: 128000,
       }]}),
@@ -39,7 +39,7 @@ async function runCode(lang, code, stdin) {
     const data = await res.json();
     if (!data.submissions || !data.submissions[0]) return { ok: false, output: 'No response', type: 'API Error' };
     const r = data.submissions[0];
-    const decode = s => s ? atob(s) : '';
+    const decode = s => s ? b64ToUtf8(s) : '';
     const stdout = decode(r.stdout || '');
     const stderr = decode(r.stderr || '');
     const compile = decode(r.compile_output || '');
