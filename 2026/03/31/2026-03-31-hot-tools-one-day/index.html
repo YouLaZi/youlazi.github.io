@@ -1,0 +1,614 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>从热点到产品：3款实用工具一日上线全记录 | pyrrhus的技术小屋</title><meta name="author" content="pyrrhus"><meta name="copyright" content="pyrrhus"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="本文记录了如何从社会热点出发，在一天内完成3款实用工具的设计、开发、部署全流程。  🌋 起因：热点驱动的产品思维传统做产品的方式是”想到一个点子→开发→推广”。但如果你反过来：先看社会在关心什么，再针对性地做工具，就能自带流量。 比如最近的热点：  贵州茅台宣布涨价（抖音1186万热度） 国际油价大涨（百度733万热度） 苹果撤回国行AI（抖音912万热度） vivo X300 Ultra 发">
+<meta property="og:type" content="article">
+<meta property="og:title" content="从热点到产品：3款实用工具一日上线全记录">
+<meta property="og:url" content="https://youlazi.github.io/2026/03/31/2026-03-31-hot-tools-one-day/index.html">
+<meta property="og:site_name" content="pyrrhus的技术小屋">
+<meta property="og:description" content="本文记录了如何从社会热点出发，在一天内完成3款实用工具的设计、开发、部署全流程。  🌋 起因：热点驱动的产品思维传统做产品的方式是”想到一个点子→开发→推广”。但如果你反过来：先看社会在关心什么，再针对性地做工具，就能自带流量。 比如最近的热点：  贵州茅台宣布涨价（抖音1186万热度） 国际油价大涨（百度733万热度） 苹果撤回国行AI（抖音912万热度） vivo X300 Ultra 发">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://youlazi.github.io/img/avatar.png">
+<meta property="article:published_time" content="2026-03-31T11:00:00.000Z">
+<meta property="article:modified_time" content="2026-03-31T11:08:21.301Z">
+<meta property="article:author" content="pyrrhus">
+<meta property="article:tag" content="AI工具">
+<meta property="article:tag" content="Vercel">
+<meta property="article:tag" content="全栈">
+<meta property="article:tag" content="副业">
+<meta property="article:tag" content="独立开发">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://youlazi.github.io/img/avatar.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "从热点到产品：3款实用工具一日上线全记录",
+  "url": "https://youlazi.github.io/2026/03/31/2026-03-31-hot-tools-one-day/",
+  "image": "https://youlazi.github.io/img/avatar.png",
+  "datePublished": "2026-03-31T11:00:00.000Z",
+  "dateModified": "2026-03-31T11:08:21.301Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "pyrrhus",
+      "url": "https://youlazi.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://youlazi.github.io/2026/03/31/2026-03-31-hot-tools-one-day/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.5.4"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.1.0/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          const mediaQueryDark = window.matchMedia('(prefers-color-scheme: dark)')
+          const mediaQueryLight = window.matchMedia('(prefers-color-scheme: light)')
+
+          if (theme === undefined) {
+            if (mediaQueryLight.matches) activateLightMode()
+            else if (mediaQueryDark.matches) activateDarkMode()
+            else {
+              const hour = new Date().getHours()
+              const isNight = hour <= 6 || hour >= 18
+              isNight ? activateDarkMode() : activateLightMode()
+            }
+            mediaQueryDark.addEventListener('change', () => {
+              if (saveToLocal.get('theme') === undefined) {
+                e.matches ? activateDarkMode() : activateLightMode()
+              }
+            })
+          } else {
+            theme === 'light' ? activateLightMode() : activateDarkMode()
+          }
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":false},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: true,
+    post: true
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: false,
+  },
+  autoDarkmode: true
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '从热点到产品：3款实用工具一日上线全记录',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><meta name="generator" content="Hexo 8.1.1"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/url('https:/cdn.jsdelivr.net/gh/Ukenn2112/ukennweb@img/api/62775967_p0.jpg'));"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">49</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(https://picsum.photos/1920/600?random=2);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">pyrrhus的技术小屋</span></a><a class="nav-page-title" href="/"><span class="site-name">从热点到产品：3款实用工具一日上线全记录</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E6%8A%80%E6%9C%AF%E7%AC%94%E8%AE%B0/"><i class="fa-fw fas fa-book"></i><span> 技术笔记</span></a></div><div class="menus_item"><a class="site-page" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/"><i class="fa-fw fas fa-rocket"></i><span> 项目实战</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-user"></i><span> 关于我</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">从热点到产品：3款实用工具一日上线全记录</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2026-03-31T11:00:00.000Z" title="发表于 2026-03-31 19:00:00">2026-03-31</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2026-03-31T11:08:21.301Z" title="更新于 2026-03-31 19:08:21">2026-03-31</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/">项目实战</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">1.1k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>3分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><blockquote>
+<p>本文记录了如何从社会热点出发，在一天内完成3款实用工具的设计、开发、部署全流程。</p>
+</blockquote>
+<h2 id="🌋-起因：热点驱动的产品思维"><a href="#🌋-起因：热点驱动的产品思维" class="headerlink" title="🌋 起因：热点驱动的产品思维"></a>🌋 起因：热点驱动的产品思维</h2><p>传统做产品的方式是”想到一个点子→开发→推广”。但如果你反过来：<strong>先看社会在关心什么，再针对性地做工具</strong>，就能自带流量。</p>
+<p>比如最近的热点：</p>
+<ul>
+<li>贵州茅台宣布涨价（抖音1186万热度）</li>
+<li>国际油价大涨（百度733万热度）</li>
+<li>苹果撤回国行AI（抖音912万热度）</li>
+<li>vivo X300 Ultra 发布（IT之家）</li>
+</ul>
+<p>这些热点背后都有一个共同点：<strong>用户需要信息聚合和对比工具</strong>。</p>
+<h2 id="🔧-搭建自动化流水线"><a href="#🔧-搭建自动化流水线" class="headerlink" title="🔧 搭建自动化流水线"></a>🔧 搭建自动化流水线</h2><p>首先，我搭建了一套”热点→工具”的自动化流水线：</p>
+<h3 id="热点扫描器"><a href="#热点扫描器" class="headerlink" title="热点扫描器"></a>热点扫描器</h3><ul>
+<li>数据源：uapis.cn 免费聚合 API（40+ 平台）</li>
+<li>覆盖：微博、抖音、百度、知乎、B站、头条、36氪、IT之家等</li>
+<li>频率：每日自动扫描，cron 定时任务</li>
+<li>产出：每天 200-400 条去重热点</li>
+</ul>
+<h3 id="AI-分析器"><a href="#AI-分析器" class="headerlink" title="AI 分析器"></a>AI 分析器</h3><ul>
+<li>评估维度：流量潜力、工具化可行性、技术难度、变现潜力</li>
+<li>输出：TOP 3 工具方案，含功能设计和技术方案</li>
+</ul>
+<h3 id="流程"><a href="#流程" class="headerlink" title="流程"></a>流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">每日 8:00 自动扫描</span><br><span class="line">    → 多平台热搜抓取（411条）</span><br><span class="line">    → AI 分析打分筛选</span><br><span class="line">    → 生成工具方案</span><br><span class="line">    → 人工审批</span><br><span class="line">    → 开发 + Vercel 部署</span><br><span class="line">    → 博客推广</span><br></pre></td></tr></table></figure>
+
+<h2 id="🚀-3款工具一日上线"><a href="#🚀-3款工具一日上线" class="headerlink" title="🚀 3款工具一日上线"></a>🚀 3款工具一日上线</h2><h3 id="1-💰-价格雷达"><a href="#1-💰-价格雷达" class="headerlink" title="1. 💰 价格雷达"></a>1. 💰 价格雷达</h3><p><strong>线上地址</strong>：<a target="_blank" rel="noopener" href="https://price-radar-topaz.vercel.app/">price-radar-topaz.vercel.app</a></p>
+<p><strong>解决痛点</strong>：消费品价格涨跌追踪，用户不知道”什么东西又涨价了”</p>
+<p><strong>功能</strong>：</p>
+<ul>
+<li>15-20 种热门消费品价格追踪（茅台、油价、内存、家电等）</li>
+<li>Chart.js 12个月价格走势图</li>
+<li>涨跌日历：近期已宣布&#x2F;预计涨价商品</li>
+<li>分类筛选 + 实时搜索</li>
+<li>Waline 匿名评论互动</li>
+<li>数据来源标注（国家统计局、品牌官网等）</li>
+<li>开放 API：<code>/api/products</code>、<code>/api/product/[id]</code></li>
+</ul>
+<p><strong>技术栈</strong>：HTML + Tailwind CSS + Vanilla JS + Chart.js，纯前端，Vercel 部署</p>
+<hr>
+<h3 id="2-🤖-AI导航-Pro"><a href="#2-🤖-AI导航-Pro" class="headerlink" title="2. 🤖 AI导航 Pro"></a>2. 🤖 AI导航 Pro</h3><p><strong>线上地址</strong>：<a target="_blank" rel="noopener" href="https://ai-nav-pro-chi.vercel.app/">ai-nav-pro-chi.vercel.app</a></p>
+<p><strong>解决痛点</strong>：AI 工具太多太杂，不知道用哪个好</p>
+<p><strong>功能</strong>：</p>
+<ul>
+<li>40-50 个真实 AI 工具收录（ChatGPT、Claude、Midjourney、Cursor、DeepSeek 等）</li>
+<li>10 个分类：对话助手、AI绘图、AI编程、AI视频、AI音频、AI写作、AI办公、AI搜索</li>
+<li>暗色&#x2F;亮色模式切换</li>
+<li>实时搜索过滤</li>
+<li>工具详情页（功能介绍、优缺点、价格）</li>
+<li>Waline 评论 + 数据来源标注</li>
+<li>开放 API：<code>/api/tools</code>、<code>/api/categories</code></li>
+</ul>
+<hr>
+<h3 id="3-📱-机圈雷达"><a href="#3-📱-机圈雷达" class="headerlink" title="3. 📱 机圈雷达"></a>3. 📱 机圈雷达</h3><p><strong>线上地址</strong>：<a target="_blank" rel="noopener" href="https://phone-radar-gamma.vercel.app/">phone-radar-gamma.vercel.app</a></p>
+<p><strong>解决痛点</strong>：手机太多选不过来，参数对比麻烦</p>
+<p><strong>功能</strong>：</p>
+<ul>
+<li>20-25 款 2025-2026 热门手机参数库</li>
+<li>2-4 款手机并排对比，绿色高亮最佳值</li>
+<li>品牌筛选（苹果&#x2F;华为&#x2F;小米&#x2F;vivo&#x2F;OPPO&#x2F;荣耀&#x2F;三星等 14 个品牌）</li>
+<li>性价比评分系统</li>
+<li>Waline 评论 + 来源标注</li>
+<li>开放 API：<code>/api/phones</code>、<code>/api/compare?ids=1,2,3</code></li>
+</ul>
+<hr>
+<h2 id="💡-关键经验"><a href="#💡-关键经验" class="headerlink" title="💡 关键经验"></a>💡 关键经验</h2><h3 id="1-纯前端也能做有价值的产品"><a href="#1-纯前端也能做有价值的产品" class="headerlink" title="1. 纯前端也能做有价值的产品"></a>1. 纯前端也能做有价值的产品</h3><p>不是所有工具都需要后端。价格查询、参数对比这类”读多写少”的场景，纯前端 + JSON 数据完全够用。</p>
+<h3 id="2-数据来源标注是信任的基础"><a href="#2-数据来源标注是信任的基础" class="headerlink" title="2. 数据来源标注是信任的基础"></a>2. 数据来源标注是信任的基础</h3><p>用户会质疑”这数据准不准”。每条数据都标注来源，既是对用户负责，也是保护自己。</p>
+<h3 id="3-API-接口不只是给人用的"><a href="#3-API-接口不只是给人用的" class="headerlink" title="3. API 接口不只是给人用的"></a>3. API 接口不只是给人用的</h3><p>给 AI&#x2F;开发者提供 API，让其他程序能调用你的数据，这是一个重要的增长渠道。很多 AI Agent 的工作流需要实时数据。</p>
+<h3 id="4-社区属性用-Waline-轻松实现"><a href="#4-社区属性用-Waline-轻松实现" class="headerlink" title="4. 社区属性用 Waline 轻松实现"></a>4. 社区属性用 Waline 轻松实现</h3><p>不需要后端，Waline 部署在 Vercel 上，匿名也能评论，零成本加上社区互动能力。</p>
+<h3 id="5-Vercel-部署零成本"><a href="#5-Vercel-部署零成本" class="headerlink" title="5. Vercel 部署零成本"></a>5. Vercel 部署零成本</h3><p>3 个项目全部部署在 Vercel 免费套餐，Serverless Functions 处理 API，无需服务器。</p>
+<h2 id="🔮-下一步计划"><a href="#🔮-下一步计划" class="headerlink" title="🔮 下一步计划"></a>🔮 下一步计划</h2><ol>
+<li><strong>数据自动更新</strong>：定时爬取最新价格&#x2F;新机&#x2F;新 AI 工具数据</li>
+<li><strong>SEO 优化</strong>：提交到搜索引擎，写更多引流文章</li>
+<li><strong>流量监控</strong>：接入 Vercel Analytics，追踪访问量</li>
+<li><strong>变现尝试</strong>：Google AdSense + 导购联盟</li>
+</ol>
+<hr>
+<p><em>如果你也在做独立开发，欢迎交流！</em></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://youlazi.github.io">pyrrhus</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://youlazi.github.io/2026/03/31/2026-03-31-hot-tools-one-day/">https://youlazi.github.io/2026/03/31/2026-03-31-hot-tools-one-day/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://youlazi.github.io" target="_blank">pyrrhus的技术小屋</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/%E7%8B%AC%E7%AB%8B%E5%BC%80%E5%8F%91/">独立开发</a><a class="post-meta__tags" href="/tags/Vercel/">Vercel</a><a class="post-meta__tags" href="/tags/%E5%85%A8%E6%A0%88/">全栈</a><a class="post-meta__tags" href="/tags/AI%E5%B7%A5%E5%85%B7/">AI工具</a><a class="post-meta__tags" href="/tags/%E5%89%AF%E4%B8%9A/">副业</a></div><div class="post-share"><div class="social-share" data-image="/img/avatar.png" data-sites="facebook,x,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/2026/03/30/2026-03-30-vector-database-quickstart/" title="向量数据库快速入门"><div class="cover" style="background: var(--default-bg-color)"></div><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">向量数据库快速入门</div></div><div class="info-2"><div class="info-item-1">向量数据库快速入门 从 Embedding 到相似度搜索，面向 Java 开发者的向量数据库实战指南。   一、为什么需要向量数据库传统数据库按精确值查询（WHERE name &#x3D; ‘张三’），但 AI 需要按语义相似度查询（”和这句话意思最接近的内容”）。    维度 传统数据库 向量数据库    查询方式 精确匹配 &#x2F; SQL 最近邻搜索（ANN）   数据类型 结构化数据 高维向量（通常 768-1536 维）   典型场景 用户信息、订单 语义搜索、推荐、RAG   代表 MySQL、PostgreSQL Chroma、Milvus、pgvector    二、Embedding（嵌入）原理将文本转化为固定维度的浮点数数组。语义相近的文本，向量距离越近。 12345678910from openai import OpenAIclient = OpenAI(api_key=&quot;sk-xxx&quot;)response = client.embeddings.create(    model=&quot;text-embedding-3-sma...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">pyrrhus</div><div class="author-info-description">AI应用开发者 | 技术分享者</div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">15</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">49</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">3</div></a></div><a id="card-info-btn" target="_blank" rel="noopener" href="https://github.com/xxxxxx"><i class="fab fa-github"></i><span>Follow Me</span></a><div class="card-info-social-icons"><a class="social-icon" href="https://github.com/YouLaZi" target="_blank" title="Github"><i class="fab fa-github"></i></a><a class="social-icon" href="mailto:3179738838@qq.com" target="_blank" title="Email"><i class="fas fa-envelope"></i></a><a class="social-icon" href="tencent://AddContact/?fromId=50&amp;fromSubId=1&amp;subcmd=all&amp;uin=3179738838" target="_blank" title="QQ"><i class="fab fa-qq"></i></a></div></div><div class="card-widget card-announcement"><div class="item-headline"><i class="fas fa-bullhorn fa-shake"></i><span>公告</span></div><div class="announcement_content">欢迎来到我的技术小屋！这里记录着我的成长与探索。</div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%8C%8B-%E8%B5%B7%E5%9B%A0%EF%BC%9A%E7%83%AD%E7%82%B9%E9%A9%B1%E5%8A%A8%E7%9A%84%E4%BA%A7%E5%93%81%E6%80%9D%E7%BB%B4"><span class="toc-number">1.</span> <span class="toc-text">🌋 起因：热点驱动的产品思维</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%94%A7-%E6%90%AD%E5%BB%BA%E8%87%AA%E5%8A%A8%E5%8C%96%E6%B5%81%E6%B0%B4%E7%BA%BF"><span class="toc-number">2.</span> <span class="toc-text">🔧 搭建自动化流水线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%83%AD%E7%82%B9%E6%89%AB%E6%8F%8F%E5%99%A8"><span class="toc-number">2.1.</span> <span class="toc-text">热点扫描器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#AI-%E5%88%86%E6%9E%90%E5%99%A8"><span class="toc-number">2.2.</span> <span class="toc-text">AI 分析器</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B5%81%E7%A8%8B"><span class="toc-number">2.3.</span> <span class="toc-text">流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%9A%80-3%E6%AC%BE%E5%B7%A5%E5%85%B7%E4%B8%80%E6%97%A5%E4%B8%8A%E7%BA%BF"><span class="toc-number">3.</span> <span class="toc-text">🚀 3款工具一日上线</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%F0%9F%92%B0-%E4%BB%B7%E6%A0%BC%E9%9B%B7%E8%BE%BE"><span class="toc-number">3.1.</span> <span class="toc-text">1. 💰 价格雷达</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%F0%9F%A4%96-AI%E5%AF%BC%E8%88%AA-Pro"><span class="toc-number">3.2.</span> <span class="toc-text">2. 🤖 AI导航 Pro</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-%F0%9F%93%B1-%E6%9C%BA%E5%9C%88%E9%9B%B7%E8%BE%BE"><span class="toc-number">3.3.</span> <span class="toc-text">3. 📱 机圈雷达</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%92%A1-%E5%85%B3%E9%94%AE%E7%BB%8F%E9%AA%8C"><span class="toc-number">4.</span> <span class="toc-text">💡 关键经验</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-%E7%BA%AF%E5%89%8D%E7%AB%AF%E4%B9%9F%E8%83%BD%E5%81%9A%E6%9C%89%E4%BB%B7%E5%80%BC%E7%9A%84%E4%BA%A7%E5%93%81"><span class="toc-number">4.1.</span> <span class="toc-text">1. 纯前端也能做有价值的产品</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-%E6%95%B0%E6%8D%AE%E6%9D%A5%E6%BA%90%E6%A0%87%E6%B3%A8%E6%98%AF%E4%BF%A1%E4%BB%BB%E7%9A%84%E5%9F%BA%E7%A1%80"><span class="toc-number">4.2.</span> <span class="toc-text">2. 数据来源标注是信任的基础</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-API-%E6%8E%A5%E5%8F%A3%E4%B8%8D%E5%8F%AA%E6%98%AF%E7%BB%99%E4%BA%BA%E7%94%A8%E7%9A%84"><span class="toc-number">4.3.</span> <span class="toc-text">3. API 接口不只是给人用的</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-%E7%A4%BE%E5%8C%BA%E5%B1%9E%E6%80%A7%E7%94%A8-Waline-%E8%BD%BB%E6%9D%BE%E5%AE%9E%E7%8E%B0"><span class="toc-number">4.4.</span> <span class="toc-text">4. 社区属性用 Waline 轻松实现</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-Vercel-%E9%83%A8%E7%BD%B2%E9%9B%B6%E6%88%90%E6%9C%AC"><span class="toc-number">4.5.</span> <span class="toc-text">5. Vercel 部署零成本</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%F0%9F%94%AE-%E4%B8%8B%E4%B8%80%E6%AD%A5%E8%AE%A1%E5%88%92"><span class="toc-number">5.</span> <span class="toc-text">🔮 下一步计划</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/31/2026-03-31-hot-tools-one-day/" title="从热点到产品：3款实用工具一日上线全记录">从热点到产品：3款实用工具一日上线全记录</a><time datetime="2026-03-31T11:00:00.000Z" title="发表于 2026-03-31 19:00:00">2026-03-31</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-backend-architecture-quickstart/" title="后端架构快速入门">后端架构快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-cv-quickstart/" title="传统 AI-CV 快速入门">传统 AI-CV 快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-ai-dev-quickstart/" title="AI 应用开发快速入门">AI 应用开发快速入门</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div><div class="aside-list-item no-cover"><div class="content"><a class="title" href="/2026/03/30/2026-03-30-oj-platform-tech-doc/" title="CSOJ（智码）- AI辅助教学在线判题平台 技术文档">CSOJ（智码）- AI辅助教学在线判题平台 技术文档</a><time datetime="2026-03-30T10:00:00.000Z" title="发表于 2026-03-30 18:00:00">2026-03-30</time></div></div></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2025 - 2026 By pyrrhus</span></div><div class="footer_custom_text"><p style="color: #fff;">pyrrhus的技术小屋©2026|主题 
+<a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></p>
+</div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.5.4"></script><script src="/js/main.js?v=5.5.4"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload@19.1.3/dist/lazyload.iife.min.js"></script><div class="js-pjax"><script>(() => {
+  const parseViewBox = viewBox => {
+    if (!viewBox) return null
+    const parts = viewBox.trim().split(/[\s,]+/).map(n => Number(n))
+    if (parts.length !== 4 || parts.some(n => Number.isNaN(n))) return null
+    return parts
+  }
+
+  const getSvgViewBox = svg => {
+    const attr = parseViewBox(svg.getAttribute('viewBox'))
+    if (attr) return attr
+
+    // Fallback: use bbox to build a viewBox
+    try {
+      const bbox = svg.getBBox()
+      if (bbox && bbox.width && bbox.height) return [bbox.x, bbox.y, bbox.width, bbox.height]
+    } catch (e) {
+      // getBBox may fail on some edge cases; ignore
+    }
+
+    const w = Number(svg.getAttribute('width')) || 0
+    const h = Number(svg.getAttribute('height')) || 0
+    if (w > 0 && h > 0) return [0, 0, w, h]
+    return [0, 0, 100, 100]
+  }
+
+  const setSvgViewBox = (svg, vb) => {
+    svg.setAttribute('viewBox', `${vb[0]} ${vb[1]} ${vb[2]} ${vb[3]}`)
+  }
+
+  const clamp = (v, min, max) => Math.max(min, Math.min(max, v))
+
+  const openSvgInNewTab = ({ source, initViewBox }) => {
+    const getClonedSvg = () => {
+      if (typeof source === 'string') {
+        const template = document.createElement('template')
+        template.innerHTML = source.trim()
+        const svg = template.content.querySelector('svg')
+        return svg ? svg.cloneNode(true) : null
+      }
+      if (source && typeof source.cloneNode === 'function') {
+        return source.cloneNode(true)
+      }
+      return null
+    }
+
+    const clone = getClonedSvg()
+    if (!clone) return
+    if (initViewBox && initViewBox.length === 4) {
+      clone.setAttribute('viewBox', initViewBox.join(' '))
+    }
+    if (!clone.getAttribute('xmlns')) clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    if (!clone.getAttribute('xmlns:xlink') && clone.outerHTML.includes('xlink:')) {
+      clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink')
+    }
+    // inject background to match current theme
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark'
+    const bg = getComputedStyle(document.body).backgroundColor || (isDark ? '#1e1e1e' : '#ffffff')
+    if (!clone.style.background) clone.style.background = bg
+
+    const serializer = new XMLSerializer()
+    const svgSource = serializer.serializeToString(clone)
+    const htmlSource = `<!doctype html><html><head><meta charset="utf-8" />
+      <style>
+        html, body { width: 100%; height: 100%; margin: 0; display: flex; align-items: center; justify-content: center; background: ${bg}; }
+        svg { max-width: 100%; max-height: 100%; height: auto; width: auto; }
+      </style>
+      </head><body>${svgSource}</body></html>`
+    const blob = new Blob([htmlSource], { type: 'text/html;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener')
+    setTimeout(() => URL.revokeObjectURL(url), 30000)
+  }
+
+  const attachMermaidViewerButton = wrap => {
+    let btn = wrap.querySelector('.mermaid-open-btn')
+    if (!btn) {
+      btn = document.createElement('button')
+      btn.type = 'button'
+      btn.className = 'mermaid-open-btn'
+      wrap.appendChild(btn)
+    }
+
+    btn.innerHTML = '<i class="fa fa-search fa-fw" aria-hidden="true"></i>'
+
+    if (!btn.__mermaidViewerBound) {
+      btn.addEventListener('click', e => {
+        e.preventDefault()
+        e.stopPropagation()
+        const svg = wrap.__mermaidOriginalSvg || wrap.querySelector('svg')
+        if (!svg) return
+        const initViewBox = wrap.__mermaidInitViewBox
+        if (typeof svg === 'string') {
+          openSvgInNewTab({ source: svg, initViewBox })
+          return
+        }
+        openSvgInNewTab({ source: svg, initViewBox })
+      })
+      btn.__mermaidViewerBound = true
+    }
+  }
+
+  // Zoom around a point (px, py) in the SVG viewport (in viewBox coordinates)
+  const zoomAtPoint = (vb, factor, px, py) => {
+    const w = vb[2] * factor
+    const h = vb[3] * factor
+    const nx = px - (px - vb[0]) * factor
+    const ny = py - (py - vb[1]) * factor
+    return [nx, ny, w, h]
+  }
+
+  const initMermaidGestures = wrap => {
+    const svg = wrap.querySelector('svg')
+    if (!svg) return
+
+    // Ensure viewBox exists so gestures always work
+    const initVb = getSvgViewBox(svg)
+    wrap.__mermaidInitViewBox = initVb
+    wrap.__mermaidCurViewBox = initVb.slice()
+    setSvgViewBox(svg, initVb)
+
+    // Avoid binding multiple times on themeChange/pjax
+    if (wrap.__mermaidGestureBound) return
+    wrap.__mermaidGestureBound = true
+
+    // Helper: map client (viewport) coordinate -> viewBox coordinate
+    const clientToViewBox = (clientX, clientY) => {
+      const rect = svg.getBoundingClientRect()
+      const vb = wrap.__mermaidCurViewBox || getSvgViewBox(svg)
+      const x = vb[0] + (clientX - rect.left) * (vb[2] / rect.width)
+      const y = vb[1] + (clientY - rect.top) * (vb[3] / rect.height)
+      return { x, y, rect, vb }
+    }
+
+    const state = {
+      pointers: new Map(),
+      startVb: null,
+      startDist: 0,
+      startCenter: null
+    }
+
+    const clampVb = vb => {
+      const init = wrap.__mermaidInitViewBox || vb
+      const minW = init[2] * 0.1
+      const maxW = init[2] * 10
+      const minH = init[3] * 0.1
+      const maxH = init[3] * 10
+      vb[2] = clamp(vb[2], minW, maxW)
+      vb[3] = clamp(vb[3], minH, maxH)
+      return vb
+    }
+
+    const setCurVb = vb => {
+      vb = clampVb(vb)
+      wrap.__mermaidCurViewBox = vb
+      setSvgViewBox(svg, vb)
+    }
+
+    const onPointerDown = e => {
+      // Allow only primary button for mouse
+      if (e.pointerType === 'mouse' && e.button !== 0) return
+      svg.setPointerCapture(e.pointerId)
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      if (state.pointers.size === 1) {
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      } else if (state.pointers.size === 2) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        state.startDist = Math.hypot(dx, dy)
+        state.startVb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        state.startCenter = { x: (pts[0].x + pts[1].x) / 2, y: (pts[0].y + pts[1].y) / 2 }
+      }
+    }
+
+    const onPointerMove = e => {
+      if (!state.pointers.has(e.pointerId)) return
+      state.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
+      // Pan with 1 pointer
+      if (state.pointers.size === 1 && state.startVb) {
+        const p = [...state.pointers.values()][0]
+        const prev = { x: e.clientX - e.movementX, y: e.clientY - e.movementY }
+        // movementX/Y unreliable on touch, compute from stored last position
+        const last = wrap.__mermaidLastSinglePointer || p
+        const dxClient = p.x - last.x
+        const dyClient = p.y - last.y
+        wrap.__mermaidLastSinglePointer = p
+
+        const { rect } = clientToViewBox(p.x, p.y)
+        const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+        const dx = dxClient * (vb[2] / rect.width)
+        const dy = dyClient * (vb[3] / rect.height)
+        setCurVb([vb[0] - dx, vb[1] - dy, vb[2], vb[3]])
+        return
+      }
+
+      // Pinch zoom with 2 pointers
+      if (state.pointers.size === 2 && state.startVb && state.startDist > 0) {
+        const pts = [...state.pointers.values()]
+        const dx = pts[0].x - pts[1].x
+        const dy = pts[0].y - pts[1].y
+        const dist = Math.hypot(dx, dy)
+        if (!dist) return
+        const factor = state.startDist / dist // dist bigger => zoom in (viewBox smaller)
+
+        const cx = (pts[0].x + pts[1].x) / 2
+        const cy = (pts[0].y + pts[1].y) / 2
+        const centerClient = { x: cx, y: cy }
+
+        const pxy = clientToViewBox(centerClient.x, centerClient.y)
+        const cpx = pxy.x
+        const cpy = pxy.y
+
+        const vb = zoomAtPoint(state.startVb, factor, cpx, cpy)
+        setCurVb(vb)
+      }
+    }
+
+    const onPointerUpOrCancel = e => {
+      state.pointers.delete(e.pointerId)
+      if (state.pointers.size === 0) {
+        state.startVb = null
+        state.startDist = 0
+        state.startCenter = null
+        wrap.__mermaidLastSinglePointer = null
+      } else if (state.pointers.size === 1) {
+        // reset single pointer baseline to avoid jump
+        wrap.__mermaidLastSinglePointer = [...state.pointers.values()][0]
+      }
+    }
+
+    // Wheel zoom (mouse/trackpad)
+    const onWheel = e => {
+      // ctrlKey on mac trackpad pinch; we treat both as zoom
+      e.preventDefault()
+      const delta = e.deltaY
+      const zoomFactor = delta > 0 ? 1.1 : 0.9
+      const { x, y } = clientToViewBox(e.clientX, e.clientY)
+      const vb = (wrap.__mermaidCurViewBox || getSvgViewBox(svg)).slice()
+      setCurVb(zoomAtPoint(vb, zoomFactor, x, y))
+    }
+
+    const onDblClick = () => {
+      const init = wrap.__mermaidInitViewBox
+      if (!init) return
+      wrap.__mermaidCurViewBox = init.slice()
+      setSvgViewBox(svg, init)
+    }
+
+    svg.addEventListener('pointerdown', onPointerDown)
+    svg.addEventListener('pointermove', onPointerMove)
+    svg.addEventListener('pointerup', onPointerUpOrCancel)
+    svg.addEventListener('pointercancel', onPointerUpOrCancel)
+    svg.addEventListener('wheel', onWheel, { passive: false })
+    svg.addEventListener('dblclick', onDblClick)
+  }
+
+  const runMermaid = ele => {
+    window.loadMermaid = true
+    const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? '' : ''
+
+    ele.forEach((item, index) => {
+      const mermaidSrc = item.firstElementChild
+
+      // Clear old render (themeChange/pjax will rerun)
+      const oldSvg = item.querySelector('svg')
+      if (oldSvg) oldSvg.remove()
+      item.__mermaidGestureBound = false
+
+      const config = mermaidSrc.dataset.config ? JSON.parse(mermaidSrc.dataset.config) : {}
+      if (!config.theme) {
+        config.theme = theme
+      }
+      const mermaidThemeConfig = `%%{init: ${JSON.stringify(config)}}%%\n`
+      const mermaidID = `mermaid-${index}`
+      const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+
+      const renderFn = mermaid.render(mermaidID, mermaidDefinition)
+      const renderMermaid = svg => {
+        mermaidSrc.insertAdjacentHTML('afterend', svg)
+        if (true) initMermaidGestures(item)
+        item.__mermaidOriginalSvg = svg
+        if (true) attachMermaidViewerButton(item)
+      }
+
+
+      // mermaid v9 and v10 compatibility
+      typeof renderFn === 'string' ? renderMermaid(renderFn) : renderFn.then(({ svg }) => renderMermaid(svg))
+    })
+  }
+
+  const codeToMermaid = () => {
+    const codeMermaidEle = document.querySelectorAll('pre > code.mermaid')
+    if (codeMermaidEle.length === 0) return
+
+    codeMermaidEle.forEach(ele => {
+      const preEle = document.createElement('pre')
+      preEle.className = 'mermaid-src'
+      preEle.hidden = true
+      preEle.textContent = ele.textContent
+      const newEle = document.createElement('div')
+      newEle.className = 'mermaid-wrap'
+      newEle.appendChild(preEle)
+      ele.parentNode.replaceWith(newEle)
+    })
+  }
+
+  const loadMermaid = () => {
+    if (false) codeToMermaid()
+    const $mermaid = document.querySelectorAll('#article-container .mermaid-wrap')
+    if ($mermaid.length === 0) return
+
+    const runMermaidFn = () => runMermaid($mermaid)
+    btf.addGlobalFn('themeChange', runMermaidFn, 'mermaid')
+    window.loadMermaid ? runMermaidFn() : btf.getScript('https://cdn.jsdelivr.net/npm/mermaid@11.12.2/dist/mermaid.min.js').then(runMermaidFn)
+  }
+
+  btf.addGlobalFn('encrypt', loadMermaid, 'mermaid')
+  window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+})()</script></div><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="99" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
