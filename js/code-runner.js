@@ -1,59 +1,80 @@
 /**
- * Hexo Code Runner v3
- * 博客代码块一键运行 · Judge0 CE (免费)
+ * Hexo Code Runner v5
+ * 浏览器端代码运行 · 零外部依赖
+ * Python: Skulpt | JavaScript: eval | Go/Java/C++: 提示本地运行
  */
 'use strict';
 
-const JUDGE0_API = 'https://api.judge0.com';
-const JUDGE0_BATCH = JUDGE0_API + '/submissions/batch?base64_encoded=true&wait=true';
+// ============ Python (Skulpt) ============
+let skulptLoaded = false;
+let skulptPromise = null;
 
-// Judge0 language IDs
-const LANG_MAP = {
-  go:60, golang:60, python:71, py:71, python3:71,
-  javascript:63, js:63, nodejs:63,
-  typescript:74, ts:74, java:62, c:50,
-  cpp:54, 'c++':54, rust:73, rs:73, ruby:72, rb:72,
-  php:68, swift:83, kotlin:79, kt:79, scala:81,
-  r:80, shell:86, bash:86, sh:86, lua:76, perl:54,
-  csharp:51, 'c#':51, fsharp:57, dart:114,
-  haskell:22, pascal:82, objectivec:79,
-};
-
-async function runCode(lang, code, stdin) {
-  const langId = LANG_MAP[lang.toLowerCase()];
-  if (!langId) return { ok: false, output: `Unsupported language: ${lang}`, type: 'Error' };
-  try {
-    const utf8ToB64 = s => btoa(unescape(encodeURIComponent(s)));
-    const b64ToUtf8 = s => decodeURIComponent(escape(atob(s)));
-    const res = await fetch(JUDGE0_BATCH, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ submissions: [{
-        language_id: langId,
-        source_code: utf8ToB64(code),
-        stdin: utf8ToB64(stdin || ''),
-        cpu_time_limit: 5,
-        memory_limit: 128000,
-      }]}),
-    });
-    const data = await res.json();
-    if (!data.submissions || !data.submissions[0]) return { ok: false, output: 'No response', type: 'API Error' };
-    const r = data.submissions[0];
-    const decode = s => s ? b64ToUtf8(s) : '';
-    const stdout = decode(r.stdout || '');
-    const stderr = decode(r.stderr || '');
-    const compile = decode(r.compile_output || '');
-    return {
-      ok: r.status && r.status.id <= 3,
-      output: compile + stdout,
-      stderr: stderr,
-      type: r.status ? r.status.description : 'Error',
-      runtime: r.time ? `${(parseFloat(r.time)*1000).toFixed(0)}ms` : '',
+function loadSkulpt() {
+  if (skulptPromise) return skulptPromise;
+  skulptPromise = new Promise((resolve) => {
+    const s1 = document.createElement('script');
+    s1.src = 'https://skulpt.org/js/skulpt.min.js';
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = 'https://skulpt.org/js/skulpt-stdlib.js';
+      s2.onload = () => { skulptLoaded = true; resolve(true); };
+      s2.onerror = () => resolve(false);
+      document.head.appendChild(s2);
     };
+    s1.onerror = () => resolve(false);
+    document.head.appendChild(s1);
+  });
+  return skulptPromise;
+}
+
+function runPython(code, stdin) {
+  return new Promise(async (resolve) => {
+    const ok = await loadSkulpt();
+    if (!ok) { resolve({ ok: false, output: 'Skulpt library failed to load', type: 'Error' }); return; }
+
+    const myStdin = (stdin || '').split('\n');
+    let out = '', err = '';
+    Sk.configure({
+      output: (s) => out += s + '\n',
+      inputfun: () => myStdin.shift() || '',
+      __future__: Sk.python3,
+    });
+    try {
+      Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, code, true));
+      resolve({ ok: true, output: out });
+    } catch (e) {
+      resolve({ ok: false, output: out, error: String(e.toString && e.toString() || e), type: 'Runtime Error' });
+    }
+  });
+}
+
+// ============ JavaScript ============
+function runJS(code) {
+  try {
+    const logs = [];
+    const fakeConsole = { log: (...a) => logs.push(a.map(v => typeof v === 'object' ? JSON.stringify(v) : String(v)).join(' ')), error: (...a) => logs.push('ERR: ' + a.join(' ')), warn: (...a) => logs.push('WARN: ' + a.join(' ')) };
+    const fn = new Function('console', code);
+    fn(fakeConsole);
+    return { ok: true, output: logs.join('\n') || '(no output)' };
   } catch (e) {
-    return { ok: false, output: e.message, type: 'Network Error' };
+    return { ok: false, output: '', error: e.message, type: 'Runtime Error' };
   }
 }
+
+// ============ Go/Java/C++ (不支持浏览器端，提示本地运行) ============
+function localOnly(lang) {
+  return { ok: false, output: `${lang} 不支持浏览器端运行。\n\n请在本地运行：\n  go run main.go      # Go\n  javac Main.java      # Java\n  g++ main.cpp -o main && ./main  # C++\n  python main.py      # Python`, type: 'Not Supported' };
+}
+
+const LANG_RUNNERS = {
+  python: (code, stdin) => runPython(code, stdin),
+  py: (code, stdin) => runPython(code, stdin),
+  python3: (code, stdin) => runPython(code, stdin),
+  javascript: (code, stdin) => runJS(code),
+  js: (code, stdin) => runJS(code),
+};
+
+const SUPPORTED_LANGS = new Set(['python', 'py', 'python3', 'javascript', 'js', 'nodejs', 'go', 'golang', 'java', 'c', 'cpp', 'c++', 'rust', 'rs', 'ruby', 'rb', 'php', 'swift', 'kotlin', 'kt', 'typescript', 'ts', 'bash', 'sh', 'shell', 'r', 'lua', 'perl']);
 
 // ============ UI ============
 const CSS = `
@@ -71,10 +92,11 @@ const CSS = `
 #hcr-status.ok{color:#a6e3a1}
 #hcr-status.err{color:#f38ba8}
 #hcr-status.run{color:#f9e2af}
+#hcr-status.info{color:#89b4fa}
 .spinner{display:inline-block;width:12px;height:12px;border:2px solid #313244;border-top-color:#f9e2af;border-radius:50%;animation:hcr-spin .6s linear infinite}
 @keyframes hcr-spin{to{transform:rotate(360deg)}}
 #hcr-output{flex:1;overflow:auto;padding:14px 20px;white-space:pre-wrap;word-break:break-all;line-height:1.6;min-height:100px}
-#hcr-stdin-area{padding:10px 20px;border-top:1px solid #313244;display:none}
+#hcr-stdin-area{padding:10px 20px;border-top:1px solid #313244}
 #hcr-stdin-area textarea{width:100%;min-height:50px;max-height:100px;background:#11111b;color:#cdd6f4;border:1px solid #313244;border-radius:6px;padding:8px;font-family:inherit;font-size:12px;resize:vertical;outline:none;box-sizing:border-box}
 #hcr-stdin-area textarea:focus{border-color:#89b4fa}
 #hcr-actions{padding:10px 20px;border-top:1px solid #313244;display:flex;gap:8px}
@@ -95,117 +117,20 @@ html[data-theme=light] #hcr-actions{border-color:#ccd0da}
 html[data-theme=light] #hcr-copy{background:#ccd0da;color:#4c4f69}
 `;
 
-function injectStyles() {
-  if (document.getElementById('hcr-styles')) return;
-  const s = document.createElement('style');
-  s.id = 'hcr-styles';
-  s.textContent = CSS;
-  document.head.appendChild(s);
-}
+function injectStyles(){if(document.getElementById('hcr-styles'))return;const s=document.createElement('style');s.id='hcr-styles';s.textContent=CSS;document.head.appendChild(s)}
 
-function createUI() {
-  if (document.getElementById('hcr-overlay')) return;
-  document.body.insertAdjacentHTML('beforeend', `
-    <div id="hcr-overlay"></div>
-    <div id="hcr-panel">
-      <div id="hcr-header"><h3>▶ Code Runner</h3><button id="hcr-close">✕</button></div>
-      <div id="hcr-meta"><span>Language:</span><span class="badge" id="hcr-lang">-</span></div>
-      <div id="hcr-status"></div>
-      <div id="hcr-output"></div>
-      <div id="hcr-stdin-area"><textarea id="hcr-stdin" placeholder="输入 stdin（可选）"></textarea></div>
-      <div id="hcr-actions">
-        <button id="hcr-run">▶ 运行</button>
-        <button id="hcr-copy">📋 复制输出</button>
-      </div>
-    </div>
-  `);
-  document.getElementById('hcr-close').onclick = closePanel;
-  document.getElementById('hcr-overlay').onclick = closePanel;
-  document.getElementById('hcr-run').onclick = doRun;
-  document.getElementById('hcr-copy').onclick = doCopy;
-}
+function createUI(){if(document.getElementById('hcr-overlay'))return;document.body.insertAdjacentHTML('beforeend',`<div id="hcr-overlay"></div><div id="hcr-panel"><div id="hcr-header"><h3>▶ Code Runner</h3><button id="hcr-close">✕</button></div><div id="hcr-meta"><span>Language:</span><span class="badge" id="hcr-lang">-</span></div><div id="hcr-status"></div><div id="hcr-output"></div><div id="hcr-stdin-area"><textarea id="hcr-stdin" placeholder="输入 stdin（可选）"></textarea></div><div id="hcr-actions"><button id="hcr-run">▶ 运行</button><button id="hcr-copy">📋 复制输出</button></div></div>`);document.getElementById('hcr-close').onclick=closePanel;document.getElementById('hcr-overlay').onclick=closePanel;document.getElementById('hcr-run').onclick=doRun;document.getElementById('hcr-copy').onclick=doCopy}
 
-let currentLang = '', currentCode = '';
+let currentLang='',currentCode='';
+function openPanel(lang,code){currentLang=lang;currentCode=code;document.getElementById('hcr-lang').textContent=lang;document.getElementById('hcr-output').textContent='';document.getElementById('hcr-status').textContent='';document.getElementById('hcr-status').className='';document.getElementById('hcr-run').disabled=false;document.getElementById('hcr-stdin-area').style.display='block';document.getElementById('hcr-stdin').value='';document.getElementById('hcr-panel').classList.add('show');document.getElementById('hcr-overlay').classList.add('show')}
+function closePanel(){document.getElementById('hcr-panel').classList.remove('show');document.getElementById('hcr-overlay').classList.remove('show')}
 
-function openPanel(lang, code) {
-  currentLang = lang; currentCode = code;
-  document.getElementById('hcr-lang').textContent = lang;
-  document.getElementById('hcr-output').textContent = '';
-  document.getElementById('hcr-status').textContent = '';
-  document.getElementById('hcr-status').className = '';
-  document.getElementById('hcr-run').disabled = false;
-  document.getElementById('hcr-stdin-area').style.display = 'block';
-  document.getElementById('hcr-stdin').value = '';
-  document.getElementById('hcr-panel').classList.add('show');
-  document.getElementById('hcr-overlay').classList.add('show');
-}
+async function doRun(){const btn=document.getElementById('hcr-run'),status=document.getElementById('hcr-status'),output=document.getElementById('hcr-output');btn.disabled=true;status.className='run';status.innerHTML='<span class="spinner"></span> 正在运行...';output.textContent='';const stdin=document.getElementById('hcr-stdin').value;const langKey=currentLang.toLowerCase();const runner=LANG_RUNNERS[langKey];let r;if(runner){r=await runner(currentCode,stdin)}else{r=localOnly(currentLang)}btn.disabled=false;if(r.ok){status.className='ok';status.textContent='✅ 运行成功'}else if(r.type==='Not Supported'){status.className='info';status.textContent='ℹ️ 仅支持浏览器端运行'}else{status.className='err';status.textContent='❌ '+r.type}output.textContent=r.output+(r.error?'\n\n'+r.error:'');output.scrollTop=0}
 
-function closePanel() {
-  document.getElementById('hcr-panel').classList.remove('show');
-  document.getElementById('hcr-overlay').classList.remove('show');
-}
-
-async function doRun() {
-  const btn = document.getElementById('hcr-run');
-  const status = document.getElementById('hcr-status');
-  const output = document.getElementById('hcr-output');
-  btn.disabled = true;
-  status.className = 'run';
-  status.innerHTML = '<span class="spinner"></span> 正在运行...';
-  output.textContent = '';
-  const r = await runCode(currentLang, currentCode, document.getElementById('hcr-stdin').value);
-  btn.disabled = false;
-  if (r.ok) { status.className = 'ok'; status.textContent = `✅ 运行成功 · ${r.runtime}`; }
-  else { status.className = 'err'; status.textContent = `❌ ${r.type}`; }
-  output.textContent = r.output + (r.stderr ? '\n\n[stderr]\n' + r.stderr : '');
-  output.scrollTop = 0;
-}
-
-function doCopy() {
-  const t = document.getElementById('hcr-output').textContent;
-  if (!t) return;
-  navigator.clipboard.writeText(t).then(() => {
-    const b = document.getElementById('hcr-copy');
-    b.textContent = '✅ 已复制';
-    setTimeout(() => b.textContent = '📋 复制输出', 1500);
-  });
-}
+function doCopy(){const t=document.getElementById('hcr-output').textContent;if(!t)return;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('hcr-copy');b.textContent='✅ 已复制';setTimeout(()=>b.textContent='📋 复制输出',1500)})}
 
 // ============ Butterfly 适配 ============
-function addRunButtons() {
-  document.querySelectorAll('figure.highlight').forEach(figure => {
-    if (figure.querySelector('.hcr-run-btn')) return;
-    const cls = figure.className || '';
-    const m = cls.match(/highlight\s+(?:language-)?(\w+)/);
-    if (!m) return;
-    const lang = m[1];
-    if (!LANG_MAP[lang.toLowerCase()]) return;
+function addRunButtons(){document.querySelectorAll('figure.highlight').forEach(figure=>{if(figure.querySelector('.hcr-run-btn'))return;const cls=figure.className||'';const m=cls.match(/highlight\s+(?:language-)?(\w+)/);if(!m)return;const lang=m[1];if(!SUPPORTED_LANGS.has(lang.toLowerCase()))return;const btn=document.createElement('button');btn.className='hcr-run-btn';btn.textContent='▶ Run';btn.style.cssText='position:relative;float:right;background:linear-gradient(135deg,#a6e3a1,#94e2d5);color:#1e1e2e;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;z-index:10;font-family:system-ui,sans-serif;margin:2px 0 0 8px;';btn.onclick=e=>{e.preventDefault();e.stopPropagation();const td=figure.querySelector('td.code');const pre=td?td.querySelector('pre'):figure.querySelector('pre');openPanel(lang,pre?pre.textContent:figure.textContent)};const header=figure.querySelector('.code-header');if(header)header.appendChild(btn);else{const bar=document.createElement('div');bar.style.cssText='display:flex;justify-content:flex-end;padding:2px 8px;background:#181825;';bar.appendChild(btn);figure.insertBefore(bar,figure.firstChild)}})}
 
-    const btn = document.createElement('button');
-    btn.className = 'hcr-run-btn';
-    btn.textContent = '▶ Run';
-    btn.style.cssText = 'position:relative;float:right;background:linear-gradient(135deg,#a6e3a1,#94e2d5);color:#1e1e2e;border:none;border-radius:6px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;z-index:10;font-family:system-ui,sans-serif;margin:2px 0 0 8px;';
-    btn.onclick = e => {
-      e.preventDefault(); e.stopPropagation();
-      const td = figure.querySelector('td.code');
-      const pre = td ? td.querySelector('pre') : figure.querySelector('pre');
-      openPanel(lang, pre ? pre.textContent : figure.textContent);
-    };
-
-    const header = figure.querySelector('.code-header');
-    if (header) header.appendChild(btn);
-    else {
-      const bar = document.createElement('div');
-      bar.style.cssText = 'display:flex;justify-content:flex-end;padding:2px 8px;background:#181825;';
-      bar.appendChild(btn);
-      figure.insertBefore(bar, figure.firstChild);
-    }
-  });
-}
-
-function init() {
-  injectStyles(); createUI(); addRunButtons();
-  new MutationObserver(() => setTimeout(addRunButtons, 300)).observe(document.body, { childList: true, subtree: true });
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
-else init();
+function init(){injectStyles();createUI();addRunButtons();new MutationObserver(()=>setTimeout(addRunButtons,300)).observe(document.body,{childList:true,subtree:true})}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
